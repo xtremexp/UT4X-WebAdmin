@@ -16,7 +16,7 @@ IMPLEMENT_MODULE(FUT4WebAdminPlugin, UT4WebAdmin)
 
 void FUT4WebAdminPlugin::StartupModule()
 {
-		UUT4WebAdmin* UT4WebAdmin = Cast<UUT4WebAdmin>(StaticConstructObject(UUT4WebAdmin::StaticClass()));
+		UUT4WebAdmin* UT4WebAdmin = NewObject<UUT4WebAdmin>();
 		UT4WebAdmin->Init();
 
 }
