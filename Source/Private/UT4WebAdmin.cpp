@@ -21,5 +21,5 @@ void UUT4WebAdmin::Tick(float DeltaTime)
 
 TStatId UUT4WebAdmin::GetStatId() const
 {
-	RETURN_QUICK_DECLARE_CYCLE_STAT(UHTTPAdmin, STATGROUP_Tickables);
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UUT4WebAdmin, STATGROUP_Tickables);
 }
