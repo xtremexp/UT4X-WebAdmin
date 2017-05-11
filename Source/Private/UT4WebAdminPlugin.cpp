@@ -1,4 +1,4 @@
-#include "HTTPAdmin.h"
+#include "UT4WebAdmin.h"
 
 #include "Core.h"
 #include "Engine.h"
@@ -12,7 +12,7 @@ class FUT4WebAdminPlugin : public IModuleInterface
 	virtual void ShutdownModule() override;
 };
 
-IMPLEMENT_MODULE(FUT4WebAdminPlugin, HTTPAdmin)
+IMPLEMENT_MODULE(FUT4WebAdminPlugin, UT4WebAdmin)
 
 void FUT4WebAdminPlugin::StartupModule()
 {
@@ -22,7 +22,7 @@ void FUT4WebAdminPlugin::StartupModule()
 }
 
 
-void FHTTPAdminPlugin::ShutdownModule()
+void FUT4WebAdminPlugin::ShutdownModule()
 {
 
 }
