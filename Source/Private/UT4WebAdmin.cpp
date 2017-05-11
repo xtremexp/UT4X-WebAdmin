@@ -1,15 +1,25 @@
 #include "UT4WebAdmin.h"
+#include "Base64.h"
 
-UT4WebAdmin::UT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
+UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
 {
-	MGServer = nullptr;
-	GameMode = nullptr;
+
 }
 
-void UHTTPAdmin::Init()
+void UUT4WebAdmin::Init()
 {
-	UE_LOG(HTTPAdmin, Log, TEXT("=================="));
-	UE_LOG(HTTPAdmin, Log, TEXT("UT4WebAdmin Started));
-	UE_LOG(HTTPAdmin, Log, TEXT("=================="));
+	UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+	UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Started"));
+	UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+}
+
+void UUT4WebAdmin::Tick(float DeltaTime)
+{
+
+}
+
+TStatId UUT4WebAdmin::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UHTTPAdmin, STATGROUP_Tickables);
 }
