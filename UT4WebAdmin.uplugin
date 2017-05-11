@@ -1,0 +1,23 @@
+{
+	"FileVersion" : 3,
+	
+	"FriendlyName" : "UT4 Web Admin",
+	"Version" : 1,
+	"VersionName" : "1.0",
+	"CreatedBy" : "XtremeXp",
+	"CreatedByURL" : "",
+	"EngineVersion" : "4.15.0",
+	"Description" : "Web administration tool for UT4 server",
+	"Category" : "UnrealTournament.Mutator",
+	"EnabledByDefault" : false,
+	"CanContainContent" : true,
+	
+	"Modules" :
+	[
+		{
+			"Name" : "UT4WebAdmin",
+			"Type" : "Runtime",
+			"WhitelistPlatforms" : [ "Win32", "Win64", "Linux" ]
+		}
+	]
+}
