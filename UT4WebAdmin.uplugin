@@ -9,7 +9,7 @@
 	"EngineVersion" : "4.15.0",
 	"Description" : "Web administration tool for UT4 server",
 	"Category" : "UnrealTournament.Mutator",
-	"EnabledByDefault" : false,
+	"EnabledByDefault" : true,
 	"CanContainContent" : true,
 	
 	"Modules" :
