@@ -5,7 +5,7 @@ namespace UnrealBuildTool.Rules
 	{
 		public UT4WebAdmin(TargetInfo Target)
         {
-            PrivateIncludePaths.Add("UT4WebAdmin/Private");
+            //PrivateIncludePaths.Add("UT4WebAdmin/Private");
             PublicDependencyModuleNames.AddRange(
 				new string[]
 				{
@@ -13,10 +13,11 @@ namespace UnrealBuildTool.Rules
 					"CoreUObject",
                     "Engine",
                     "UnrealTournament",
+					"PakFile",
 					"Json", 
 					"JsonUtilities"
 				}
-				);
+			);
 		}
 	}
 }

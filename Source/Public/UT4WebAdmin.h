@@ -3,6 +3,9 @@
 #include "Core.h"
 #include "UnrealTournament.h"
 
+#include "civetweb.h"
+#include "CivetServer.h"
+
 #include "UT4WebAdmin.generated.h"
 
 // Log messages
@@ -16,6 +19,7 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 	GENERATED_UCLASS_BODY()
 
 	void Init();
+	void Stop();
 
 	virtual void Tick(float DeltaTime) override;
 	virtual TStatId GetStatId() const override;
@@ -27,4 +31,12 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 	{
 		return true;
 	}
+
+	UPROPERTY(Config)
+		uint32 Port;
+
+private:
+	//CivetServer *me;
+	//mg_context* ctx;
+	AUTGameMode* GameMode;
 };
