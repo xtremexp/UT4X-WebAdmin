@@ -32,11 +32,12 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 		return true;
 	}
 
+	/* Listening port of http/webadmin server */
 	UPROPERTY(Config)
 		uint32 Port;
 
 private:
-	//CivetServer *me;
-	//mg_context* ctx;
+	/* Http server reference */
+	struct mg_context *ctx;
 	AUTGameMode* GameMode;
 };

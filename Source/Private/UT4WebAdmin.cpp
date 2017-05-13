@@ -4,14 +4,26 @@
 #include "civetweb.h"
 #include "CivetServer.h"
 
-#define DOCUMENT_ROOT "."
-#define PORT "8080"
+#define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
+#define UT4WA_HTML_FOLDER "www"
+#define LISTENING_PORT "8080"
+
+int
+WelcomeHandler(struct mg_connection *conn, void *cbdata)
+{
+	mg_printf(conn,
+		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: "
+		"close\r\n\r\n");
+	mg_printf(conn, "<html><body>");
+	mg_printf(conn, "<h2>Welcome to UT4 Web Admin !</h2>");
+	mg_printf(conn, "</body></html>\n");
+	return 1;
+}
 
 UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
 {
-	//me = nullptr;
-	//ctx = nullptr;
+	ctx = nullptr;
 	GameMode = nullptr;
 }
 
@@ -22,39 +34,59 @@ void UUT4WebAdmin::Init()
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
 
-	// = User + TEXT(":") + Password;
+	/* Initialize the library */
+	mg_init_library(0);
 
 	if (Port == 0)
 	{
 		Port = 8080;
 	}
 
-	//const char *options[] = { "listening_ports", "8080", NULL };
-	
+	// Set the document root
+	FString DocumentRoot = FPaths::GamePluginsDir() / UT4WA_PLUGIN_FOLDER / UT4WA_HTML_FOLDER;
+
+	// Set listening port 
+	FString PortStr = FString::FromInt(Port);
+
 	const char *options[] = {
-		"document_root", ".", "listening_ports", "8080", 0 };
+		"document_root", TCHAR_TO_ANSI(*DocumentRoot), "listening_ports", TCHAR_TO_ANSI(*PortStr), 0 };
 
-	std::vector<std::string> cpp_options;
-	for (int i = 0; i<(sizeof(options) / sizeof(options[0]) - 1); i++) {
-		cpp_options.push_back(options[i]);
+	/* Start the server */
+	ctx = mg_start(NULL, 0, options);
+
+	if (ctx) {
+		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Started:"));
+		UE_LOG(UT4WebAdmin, Log, TEXT(" * Port           : %i"), Port);
+		UE_LOG(UT4WebAdmin, Log, TEXT(" * Root Web Folder: %s"), *DocumentRoot);
+		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+
+		/* Add some handler */
+		mg_set_request_handler(ctx, "/", WelcomeHandler, "Hello world");
 	}
-
-	//CivetServer server(options); // <-- C style start
-	
-	CivetServer server(cpp_options); // <-- C++ style start
-
-	UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
-	UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Started"));
-	UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+	else {
+		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin could not be started"));
+		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+	}
 }
 
 void UUT4WebAdmin::Stop()
 {
-	//mg_stop(ctx);
+	if (ctx) {
+		/* Stop the server */
+		mg_stop(ctx);
+
+		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Stopped"));
+
+		/* Un-initialize the library */
+		mg_exit_library();
+	}
 }
 
 void UUT4WebAdmin::Tick(float DeltaTime)
 {
+	//poll(MGServer, 1);
 	// TODO
 }
 
