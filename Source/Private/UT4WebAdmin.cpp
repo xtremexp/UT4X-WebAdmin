@@ -1,8 +1,6 @@
 #include "UT4WebAdmin.h"
 #include "Base64.h"
 
-#include "civetweb.h"
-#include "CivetServer.h"
 
 #define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
 #define UT4WA_HTML_FOLDER "www"
@@ -17,13 +15,16 @@ WelcomeHandler(struct mg_connection *conn, void *cbdata)
 	mg_printf(conn, "<html><body>");
 	mg_printf(conn, "<h2>Welcome to UT4 Web Admin !</h2>");
 	mg_printf(conn, "</body></html>\n");
+
 	return 1;
 }
 
 UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
 {
-	ctx = nullptr;
+	#if defined(USE_CIVETWEB)
+		ctx = nullptr;
+	#endif
 	GameMode = nullptr;
 }
 
@@ -33,9 +34,6 @@ void UUT4WebAdmin::Init()
 
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
-
-	/* Initialize the library */
-	mg_init_library(0);
 
 	if (Port == 0)
 	{
@@ -48,8 +46,22 @@ void UUT4WebAdmin::Init()
 	// Set listening port 
 	FString PortStr = FString::FromInt(Port);
 
+	#if defined(USE_CIVETWEB)
+		StartCivetWeb(DocumentRoot, PortStr);
+	#endif
+}
+
+#if defined(USE_CIVETWEB)
+void UUT4WebAdmin::StartCivetWeb(FString &DocumentRoot, FString &PortStr)
+{
+	/* Initialize the library */
+	mg_init_library(0);
+
 	const char *options[] = {
-		"document_root", TCHAR_TO_ANSI(*DocumentRoot), "listening_ports", TCHAR_TO_ANSI(*PortStr), 0 };
+		"document_root", TCHAR_TO_ANSI(*DocumentRoot),
+		"listening_ports", TCHAR_TO_ANSI(*PortStr),
+		0
+	};
 
 	/* Start the server */
 	ctx = mg_start(NULL, 0, options);
@@ -71,7 +83,7 @@ void UUT4WebAdmin::Init()
 	}
 }
 
-void UUT4WebAdmin::Stop()
+void UUT4WebAdmin::StopCivetWeb()
 {
 	if (ctx) {
 		/* Stop the server */
@@ -82,6 +94,14 @@ void UUT4WebAdmin::Stop()
 		/* Un-initialize the library */
 		mg_exit_library();
 	}
+}
+#endif
+
+void UUT4WebAdmin::Stop()
+{
+	#if defined(USE_CIVETWEB)
+		StopCivetWeb();
+	#endif
 }
 
 void UUT4WebAdmin::Tick(float DeltaTime)

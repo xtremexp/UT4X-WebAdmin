@@ -3,8 +3,12 @@
 #include "Core.h"
 #include "UnrealTournament.h"
 
+#define USE_CIVETWEB 1
+
+#if defined(USE_CIVETWEB)
 #include "civetweb.h"
 #include "CivetServer.h"
+#endif
 
 #include "UT4WebAdmin.generated.h"
 
@@ -32,12 +36,21 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 		return true;
 	}
 
+	#if defined(USE_CIVETWEB)
+	/* Starts civertweb http server */
+	void StartCivetWeb(FString &DocumentRoot, FString &PortStr);
+
+	/* Stops civertweb http server */
+	void StopCivetWeb();
+	#endif
+
 	/* Listening port of http/webadmin server */
 	UPROPERTY(Config)
 		uint32 Port;
 
 private:
-	/* Http server reference */
-	struct mg_context *ctx;
+	#if defined(USE_CIVETWEB)
+		struct mg_context *ctx;
+	#endif
 	AUTGameMode* GameMode;
 };
