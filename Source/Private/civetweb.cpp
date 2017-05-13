@@ -14421,8 +14421,8 @@ mg_start(const struct mg_callbacks *callbacks,
 
 	/* Start worker threads */
 	for (i = 0; i < ctx->cfg_worker_threads; i++) {
-		struct worker_thread_args *wta = nullptr;// =
-		    //mg_malloc(sizeof(struct worker_thread_args)); // XTXP
+		//struct worker_thread_args *wta = mg_malloc(sizeof(struct worker_thread_args)); // XTXP not working on C
+		struct worker_thread_args *wta = (worker_thread_args*) mg_malloc(sizeof(struct worker_thread_args)); // XTXP working on c++
 		if (wta) {
 			wta->ctx = ctx;
 			wta->index = (int)i;
