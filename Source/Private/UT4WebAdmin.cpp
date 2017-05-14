@@ -3,21 +3,8 @@
 
 
 #define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
-#define UT4WA_HTML_FOLDER "www"
-#define LISTENING_PORT "8080"
+#define UT4WA_ROOT_FOLDER "www"
 
-int
-WelcomeHandler(struct mg_connection *conn, void *cbdata)
-{
-	mg_printf(conn,
-		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: "
-		"close\r\n\r\n");
-	mg_printf(conn, "<html><body>");
-	mg_printf(conn, "<h2>Welcome to UT4 Web Admin !</h2>");
-	mg_printf(conn, "</body></html>\n");
-
-	return 1;
-}
 
 UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
@@ -31,50 +18,59 @@ UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer)
 
 void UUT4WebAdmin::Init()
 {
-
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
 
-	if (Port == 0)
+	if (WebHttpPort == 0)
 	{
-		Port = 8080;
+		WebHttpPort = 8080;
 	}
 
-	// Set the document root
-	FString DocumentRoot = FPaths::GamePluginsDir() / UT4WA_PLUGIN_FOLDER / UT4WA_HTML_FOLDER;
+	if (WebHttpsPort == 0)
+	{
+		WebHttpsPort = 443;
+	}
 
-	// Set listening port 
-	FString PortStr = FString::FromInt(Port);
+	FString WebRootFolder = FPaths::GamePluginsDir() / UT4WA_PLUGIN_FOLDER / UT4WA_ROOT_FOLDER;
 
 	#if defined(USE_CIVETWEB)
-		StartCivetWeb(DocumentRoot, PortStr);
+		StartCivetWeb();
 	#endif
 }
 
 #if defined(USE_CIVETWEB)
-void UUT4WebAdmin::StartCivetWeb(FString &DocumentRoot, FString &PortStr)
+void UUT4WebAdmin::StartCivetWeb()
 {
+	// Set listening port(s) 80,443
+	FString WebPortsStr = FString::FromInt(WebHttpPort);
+
+	if (WebHttpsEnabled) {
+		WebPortsStr += "," + FString::FromInt(WebHttpPort) + "s";
+	}
+
 	/* Initialize the library */
 	mg_init_library(0);
 
+	// TODO handle ssl properties
 	const char *options[] = {
-		"document_root", TCHAR_TO_ANSI(*DocumentRoot),
-		"listening_ports", TCHAR_TO_ANSI(*PortStr),
-		0
+		"document_root", "../../../UnrealTournament/Plugins/UT4WebAdmin/www", // Note TCHAR_TO_ANSI(*WebRootFolder) would not make root folder working !
+		"listening_ports", TCHAR_TO_ANSI(*WebPortsStr),
+		NULL
 	};
 
 	/* Start the server */
+	//struct handler = { NULL };
 	ctx = mg_start(NULL, 0, options);
 
 	if (ctx) {
 		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
-		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Started:"));
-		UE_LOG(UT4WebAdmin, Log, TEXT(" * Port           : %i"), Port);
-		UE_LOG(UT4WebAdmin, Log, TEXT(" * Root Web Folder: %s"), *DocumentRoot);
+		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Started at :"));
+		UE_LOG(UT4WebAdmin, Log, TEXT(" * Port(s)        : %s"), *WebPortsStr);
+		UE_LOG(UT4WebAdmin, Log, TEXT(" * Root Folder    : ../../../UnrealTournament/Plugins/UT4WebAdmin/www"));
 		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
 
 		/* Add some handler */
-		mg_set_request_handler(ctx, "/", WelcomeHandler, "Hello world");
+		//mg_set_request_handler(ctx, "/admin", WelcomeHandler, "Web Administration");
 	}
 	else {
 		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));

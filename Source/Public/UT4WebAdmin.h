@@ -38,15 +38,23 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 
 	#if defined(USE_CIVETWEB)
 	/* Starts civertweb http server */
-	void StartCivetWeb(FString &DocumentRoot, FString &PortStr);
+	void StartCivetWeb();
 
 	/* Stops civertweb http server */
 	void StopCivetWeb();
 	#endif
 
-	/* Listening port of http/webadmin server */
+	/* Http port of webserver */
 	UPROPERTY(Config)
-		uint32 Port;
+		uint32 WebHttpPort;
+
+	/* Https port of webserver - not working atm */
+	UPROPERTY(Config)
+		uint32 WebHttpsPort;
+
+	/* If 'true' then http server is enabled else disabled */
+	UPROPERTY(Config)
+		bool WebHttpsEnabled;
 
 private:
 	#if defined(USE_CIVETWEB)
