@@ -77,9 +77,9 @@ void UUT4WebAdmin::StartCivetWeb(FString &DocumentRoot, FString &PortStr)
 		mg_set_request_handler(ctx, "/", WelcomeHandler, "Hello world");
 	}
 	else {
-		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
-		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin could not be started"));
-		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
+		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));
+		UE_LOG(UT4WebAdmin, Warning, TEXT("UT4WebAdmin could not be started"));
+		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));
 	}
 }
 
