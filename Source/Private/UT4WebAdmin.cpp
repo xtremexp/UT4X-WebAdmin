@@ -120,6 +120,8 @@ int GameInfoHandler(struct mg_connection *conn, void *cbdata)
 		return 1;
 	}
 
+	
+
 	return 0;
 }
 
@@ -129,17 +131,34 @@ void UUT4WebAdmin::StartCivetWeb()
 	// Set listening port(s) 80,443
 	FString WebPortsStr = FString::FromInt(WebHttpPort);
 
-	if (WebHttpsEnabled) {
-		WebPortsStr += "," + FString::FromInt(WebHttpPort) + "s";
-	}
+	// WebServer error log file - TODO move config ?
+	FString WebErrorLogFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/webserver-error.log";
 
 	/* Initialize the library */
 	mg_init_library(0);
 
-	// TODO handle ssl properties
+	if (WebHttpsEnabled) {
+		if (*WebSslCertificateFile == NULL || WebSslCertificateFile.IsEmpty()) {
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" Https disabled. WebSslCertificateFile property in UT4WebAdmin.ini file not set. Link to .pem file."));
+		}
+		else if (!FPaths::FileExists(*WebSslCertificateFile)) {
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" Https disabled. File %s does not exist."), *WebSslCertificateFile);
+		}
+		else {
+			if (WebHttpsOnly) {
+				WebPortsStr = FString::FromInt(WebHttpsPort) + "s";
+			}
+			else {
+				WebPortsStr += "," + FString::FromInt(WebHttpPort) + "s";
+			}
+		}
+	}
+
 	const char *options[] = {
 		"document_root", "../../../UnrealTournament/Plugins/UT4WebAdmin/www", // Note TCHAR_TO_ANSI(*WebRootFolder) would not make root folder working !
 		"listening_ports", TCHAR_TO_ANSI(*WebPortsStr),
+		"ssl_certificate", TCHAR_TO_ANSI(*WebSslCertificateFile),
+		"error_log_file", TCHAR_TO_ANSI(*WebErrorLogFile),
 		NULL
 	};
 
@@ -160,6 +179,11 @@ void UUT4WebAdmin::StartCivetWeb()
 	else {
 		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));
 		UE_LOG(UT4WebAdmin, Warning, TEXT("UT4WebAdmin could not be started"));
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" * Port(s)        : %s"), *WebPortsStr);
+		if (WebHttpsEnabled) {
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" * SSL Certificate File        : %s"), *WebSslCertificateFile);
+		}
+		UE_LOG(UT4WebAdmin, Warning, TEXT("See %s for more details"), *WebErrorLogFile);
 		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));
 	}
 }
