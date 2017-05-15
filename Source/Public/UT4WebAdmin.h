@@ -2,6 +2,9 @@
 
 #include "Core.h"
 #include "UnrealTournament.h"
+#include "UTGameMode.h"
+#include "UTLobbyGameState.h"
+#include "UTLobbyGameMode.h"
 
 #define USE_CIVETWEB 1
 
@@ -35,6 +38,7 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 	{
 		return true;
 	}
+
 
 	#if defined(USE_CIVETWEB)
 	/* Starts civertweb http server */
