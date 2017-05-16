@@ -5,7 +5,6 @@
 #include "UTGameMode.h"
 #include "UTLobbyGameState.h"
 #include "UTLobbyGameMode.h"
-#include "sockets.h"
 
 #define USE_CIVETWEB 1
 
@@ -49,25 +48,26 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 	void StopCivetWeb();
 	#endif
 
+	// Note: disabled some properties until civetweb can use them properly!
 	/* Http port of webserver */
-	UPROPERTY(Config)
-		uint32 WebHttpPort;
+	//UPROPERTY(Config)
+		//uint32 WebHttpPort;
 
 	/* Https port of webserver - should be 443 by default */
-	UPROPERTY(Config)
-		uint32 WebHttpsPort;
+	//UPROPERTY(Config)
+		//uint32 WebHttpsPort;
 
 	/* If 'true' then http server is enabled else disabled */
 	UPROPERTY(Config)
 		bool WebHttpsEnabled;
 
 	/* If 'true' will use https only. */
-	UPROPERTY(Config)
-		bool WebHttpsOnly;
+	//UPROPERTY(Config)
+		//bool WebHttpsOnly;
 
 	/* Path to .pem certificate file */
-	UPROPERTY(Config)
-		FString WebSslCertificateFile;
+	//UPROPERTY(Config)
+		//FString WebSslCertificateFile;
 
 private:
 	#if defined(USE_CIVETWEB)

@@ -21,7 +21,7 @@ void UUT4WebAdmin::Init()
 {
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
-
+	/*
 	if (WebHttpPort == 0)
 	{
 		WebHttpPort = 8080;
@@ -31,6 +31,7 @@ void UUT4WebAdmin::Init()
 	{
 		WebHttpsPort = 443;
 	}
+	*/
 
 	FString WebRootFolder = FPaths::GamePluginsDir() / UT4WA_PLUGIN_FOLDER / UT4WA_ROOT_FOLDER;
 
@@ -82,7 +83,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 
 			if (LobbyGameMode)
 			{
-				JsonObject->SetStringField(TEXT("ServType"), TEXT("dedi"));
+				JsonObject->SetStringField(TEXT("ServType"), TEXT("dedis"));
 				// TODO get instance data
 			}
 		}
@@ -129,7 +130,7 @@ int GameInfoHandler(struct mg_connection *conn, void *cbdata)
 void UUT4WebAdmin::StartCivetWeb()
 {
 	// Set listening port(s) 80,443
-	FString WebPortsStr = FString::FromInt(WebHttpPort);
+	//FString WebPortsStr = FString::FromInt(WebHttpPort);
 
 	// WebServer error log file - TODO move config ?
 	FString WebErrorLogFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/webserver-error.log";
@@ -137,34 +138,47 @@ void UUT4WebAdmin::StartCivetWeb()
 	/* Initialize the library */
 	mg_init_library(0);
 
+	const char *docRoot = "../../../UnrealTournament/Plugins/UT4WebAdmin/www";
+	const char *errLogFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/webserver-error.log";
+	FString sslFileStr = FString("../../../UnrealTournament/Plugins/UT4WebAdmin/ssl_certificate.pem");
+	const char *sslFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/ssl_certificate.pem";
+	FString WebPortsStr;
+
 	if (WebHttpsEnabled) {
-		if (*WebSslCertificateFile == NULL || WebSslCertificateFile.IsEmpty()) {
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" Https disabled. WebSslCertificateFile property in UT4WebAdmin.ini file not set. Link to .pem file."));
-		}
-		else if (!FPaths::FileExists(*WebSslCertificateFile)) {
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" Https disabled. File %s does not exist."), *WebSslCertificateFile);
-		}
-		else {
-			if (WebHttpsOnly) {
-				WebPortsStr = FString::FromInt(WebHttpsPort) + "s";
-			}
-			else {
-				WebPortsStr += "," + FString::FromInt(WebHttpPort) + "s";
-			}
+		WebPortsStr = "8090, 443s";
+		if (!FPaths::FileExists(*sslFileStr)) {
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" Https disabled. Certificate file %s does not exists!"), *sslFileStr);
 		}
 	}
+	else {
+		WebPortsStr = "8090";
+	}
+
+	
+	// FIXME passing FString config properties to options does not work ! ...
+	const char *options_with_ssl[]  = {
+		"document_root", docRoot,
+		"listening_ports", "8090, 443s",
+		"error_log_file", errLogFile,
+		"ssl_certificate", sslFile,
+		NULL
+	};
 
 	const char *options[] = {
-		"document_root", "../../../UnrealTournament/Plugins/UT4WebAdmin/www", // Note TCHAR_TO_ANSI(*WebRootFolder) would not make root folder working !
-		"listening_ports", TCHAR_TO_ANSI(*WebPortsStr),
-		"ssl_certificate", TCHAR_TO_ANSI(*WebSslCertificateFile),
-		"error_log_file", TCHAR_TO_ANSI(*WebErrorLogFile),
+		"document_root", docRoot,
+		"listening_ports", "8090",
+		"error_log_file", errLogFile,
 		NULL
 	};
 
 	/* Start the server */
-	//struct handler = { NULL };
-	ctx = mg_start(NULL, 0, options);
+
+	if (WebHttpsEnabled) {
+		ctx = mg_start(NULL, 0, options_with_ssl);
+	}
+	else {
+		ctx = mg_start(NULL, 0, options);
+	}
 
 	if (ctx) {
 		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
@@ -181,7 +195,7 @@ void UUT4WebAdmin::StartCivetWeb()
 		UE_LOG(UT4WebAdmin, Warning, TEXT("UT4WebAdmin could not be started"));
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * Port(s)        : %s"), *WebPortsStr);
 		if (WebHttpsEnabled) {
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" * SSL Certificate File        : %s"), *WebSslCertificateFile);
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" * SSL Certificate File        : %s"), *sslFileStr);// *WebSslCertificateFile);
 		}
 		UE_LOG(UT4WebAdmin, Warning, TEXT("See %s for more details"), *WebErrorLogFile);
 		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));

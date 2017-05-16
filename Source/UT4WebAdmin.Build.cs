@@ -14,8 +14,7 @@ namespace UnrealBuildTool.Rules
                     "UnrealTournament",
 					"PakFile",
 					"Json", 
-					"JsonUtilities",
-					"Sockets"
+					"JsonUtilities"
 				}
 			);
 		}
