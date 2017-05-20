@@ -1,17 +1,14 @@
 #pragma once
 
+#include <iostream>
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTGameMode.h"
 #include "UTLobbyGameState.h"
 #include "UTLobbyGameMode.h"
 
-#define USE_CIVETWEB 1
+#include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
 
-#if defined(USE_CIVETWEB)
-#include "civetweb.h"
-#include "CivetServer.h"
-#endif
 
 #include "UT4WebAdmin.generated.h"
 
@@ -39,39 +36,26 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 		return true;
 	}
 
-
-	#if defined(USE_CIVETWEB)
-	/* Starts civertweb http server */
-	void StartCivetWeb();
-
-	/* Stops civertweb http server */
-	void StopCivetWeb();
-	#endif
+	void StartMicroHttp();
 
 	// Note: disabled some properties until civetweb can use them properly!
 	/* Http port of webserver */
-	//UPROPERTY(Config)
-		//uint32 WebHttpPort;
-
-	/* Https port of webserver - should be 443 by default */
-	//UPROPERTY(Config)
-		//uint32 WebHttpsPort;
+	UPROPERTY(Config)
+		uint32 WebHttpPort;
 
 	/* If 'true' then http server is enabled else disabled */
 	UPROPERTY(Config)
 		bool WebHttpsEnabled;
 
-	/* If 'true' will use https only. */
-	//UPROPERTY(Config)
-		//bool WebHttpsOnly;
+	/* Path to .pem server certificate file */
+	UPROPERTY(Config)
+		FString WebServerCertificateFile;
 
-	/* Path to .pem certificate file */
-	//UPROPERTY(Config)
-		//FString WebSslCertificateFile;
+	/* Path to .key server key file */
+	UPROPERTY(Config)
+		FString WebServerKeyFile;
 
 private:
-	#if defined(USE_CIVETWEB)
-		struct mg_context *ctx;
-	#endif
+	struct MHD_Daemon *daemon;
 	AUTGameMode* GameMode;
 };

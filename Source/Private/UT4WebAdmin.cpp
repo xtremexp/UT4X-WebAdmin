@@ -2,16 +2,15 @@
 #include "Base64.h"
 
 #define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
-#define UT4WA_ROOT_FOLDER "www"
+#define UT4WA_WWW_FOLDER "www"
 
+#define PAGE "<html><head><title>File not found</title></head><body>File not found</body></html>"
 
 
 UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
 {
-	#if defined(USE_CIVETWEB)
-		ctx = nullptr;
-	#endif
+	daemon = nullptr;
 	GameMode = nullptr;
 }
 
@@ -21,23 +20,14 @@ void UUT4WebAdmin::Init()
 {
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
-	/*
+	
 	if (WebHttpPort == 0)
 	{
 		WebHttpPort = 8080;
 	}
 
-	if (WebHttpsPort == 0)
-	{
-		WebHttpsPort = 443;
-	}
-	*/
 
-	FString WebRootFolder = FPaths::GamePluginsDir() / UT4WA_PLUGIN_FOLDER / UT4WA_ROOT_FOLDER;
-
-	#if defined(USE_CIVETWEB)
-		StartCivetWeb();
-	#endif
+	StartMicroHttp();
 }
 
 TSharedPtr<FJsonObject> GetGameInfoJSON()
@@ -93,6 +83,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 	return JsonObject;
 }
 
+/*
 int GameInfoHandler(struct mg_connection *conn, void *cbdata)
 {
 
@@ -124,103 +115,152 @@ int GameInfoHandler(struct mg_connection *conn, void *cbdata)
 	
 
 	return 0;
-}
+}*/
 
-#if defined(USE_CIVETWEB)
-void UUT4WebAdmin::StartCivetWeb()
+
+int answer_to_connection(void *cls, struct MHD_Connection *connection,
+	const char *url,
+	const char *method, // GET / POST / PUT ...
+	const char *version, // HTML version 1.1
+	const char *upload_data,
+	size_t *upload_data_size, void **con_cls)
 {
-	// Set listening port(s) 80,443
-	//FString WebPortsStr = FString::FromInt(WebHttpPort);
 
-	// WebServer error log file - TODO move config ?
-	FString WebErrorLogFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/webserver-error.log";
+	// TODO handle POST methods in the future
+	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) &&
+		(0 != strcmp(method, MHD_HTTP_METHOD_HEAD)))
+		return MHD_NO;
 
-	/* Initialize the library */
-	mg_init_library(0);
+	struct MHD_Response *response;
+	int ret;
+	char *path = NULL;
 
-	const char *docRoot = "../../../UnrealTournament/Plugins/UT4WebAdmin/www";
-	const char *errLogFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/webserver-error.log";
-	FString sslFileStr = FString("../../../UnrealTournament/Plugins/UT4WebAdmin/ssl_certificate.pem");
-	const char *sslFile = "../../../UnrealTournament/Plugins/UT4WebAdmin/ssl_certificate.pem";
-	FString WebPortsStr;
-
-	if (WebHttpsEnabled) {
-		WebPortsStr = "8090, 443s";
-		if (!FPaths::FileExists(*sslFileStr)) {
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" Https disabled. Certificate file %s does not exists!"), *sslFileStr);
-		}
+	// redirect from http://myserver:port/ to http://myserver:port/index.html
+	if (strcmp(url, "/") == 0) {
+		path = "/index.html";
 	}
 	else {
-		WebPortsStr = "8090";
+		path = new char[strlen(url) + 1];
+		strcpy(path, url);
 	}
 
+	// Server files from root folder
+	FString wwwStr = FPaths::GamePluginsDir() + "/" + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER;
+	const char *root = TCHAR_TO_ANSI(*wwwStr);
+
+	// calculate the required buffer size (also accounting for the null terminator):
+	int bufferSize = strlen(root) + strlen(path) + 1;
+
+	// allocate enough memory for the concatenated string:
+	char* concatString = new char[bufferSize];
+
+	// copy strings one and two over to the new buffer:
+	strcpy(concatString, root);
+	strcat(concatString, path);
+
+
+	FILE* f;
+	f = fopen(concatString, "rb");
+
+	if (f != NULL) {
+		// Determine file size
+		fseek(f, 0, SEEK_END);
+		size_t size = ftell(f);
+		char* where = new char[size];
+		rewind(f);
+		fread(where, sizeof(char), size, f);
+
+		response = MHD_create_response_from_buffer(strlen(where),
+			(void*)where, MHD_RESPMEM_PERSISTENT);
+
+		fclose(f);
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+	}
+	else {
+		const char *notExist = "<html><body>File not found !</body></html>";
+		response = MHD_create_response_from_buffer(strlen(notExist),
+			(void*)notExist, MHD_RESPMEM_PERSISTENT);
+		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+	}
 	
-	// FIXME passing FString config properties to options does not work ! ...
-	const char *options_with_ssl[]  = {
-		"document_root", docRoot,
-		"listening_ports", "8090, 443s",
-		"error_log_file", errLogFile,
-		"ssl_certificate", sslFile,
-		NULL
-	};
+	MHD_destroy_response(response);
 
-	const char *options[] = {
-		"document_root", docRoot,
-		"listening_ports", "8090",
-		"error_log_file", errLogFile,
-		NULL
-	};
-
-	/* Start the server */
-
-	if (WebHttpsEnabled) {
-		ctx = mg_start(NULL, 0, options_with_ssl);
-	}
-	else {
-		ctx = mg_start(NULL, 0, options);
-	}
-
-	if (ctx) {
-		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
-		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Started at :"));
-		UE_LOG(UT4WebAdmin, Log, TEXT(" * Port(s)        : %s"), *WebPortsStr);
-		UE_LOG(UT4WebAdmin, Log, TEXT(" * Root Folder    : ../../../UnrealTournament/Plugins/UT4WebAdmin/www"));
-		UE_LOG(UT4WebAdmin, Log, TEXT("=================="));
-
-		/* Add some handler */
-		mg_set_request_handler(ctx, "/gameinfo", GameInfoHandler, "Web Administration - Match Info");
-	}
-	else {
-		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));
-		UE_LOG(UT4WebAdmin, Warning, TEXT("UT4WebAdmin could not be started"));
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" * Port(s)        : %s"), *WebPortsStr);
-		if (WebHttpsEnabled) {
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" * SSL Certificate File        : %s"), *sslFileStr);// *WebSslCertificateFile);
-		}
-		UE_LOG(UT4WebAdmin, Warning, TEXT("See %s for more details"), *WebErrorLogFile);
-		UE_LOG(UT4WebAdmin, Warning, TEXT("=================="));
-	}
+	return ret;
 }
 
-void UUT4WebAdmin::StopCivetWeb()
+void UUT4WebAdmin::StartMicroHttp()
 {
-	if (ctx) {
-		/* Stop the server */
-		mg_stop(ctx);
+	// SSL not working yet need some more investigation
+	if (WebHttpsEnabled) {
 
-		UE_LOG(UT4WebAdmin, Log, TEXT("UT4WebAdmin Stopped"));
+		if (NULL == *WebServerCertificateFile || NULL == *WebServerKeyFile) {
+			UE_LOG(UT4WebAdmin, Warning, TEXT("Server key or certificate file is not set."));
+			return;
+		}
 
-		/* Un-initialize the library */
-		mg_exit_library();
+		// openssl req -days 365 -out server.pem -new -x509 -key server.key
+		FILE* fcert_file = fopen(TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
+
+		// openssl genrsa -out server.key 1024
+		FILE* fkey_file = fopen(TCHAR_TO_ANSI(*WebServerKeyFile), "r");
+
+		if (NULL != fcert_file && NULL != fkey_file) {
+
+			fseek(fcert_file, 0, SEEK_END);
+			size_t size = ftell(fcert_file);
+			char* cert_pem = new char[size];
+			rewind(fcert_file);
+			fread(cert_pem, sizeof(char), size, fcert_file);
+
+
+			fseek(fkey_file, 0, SEEK_END);
+			size_t size2 = ftell(fkey_file);
+			char* key_pem = new char[size2];
+			rewind(fkey_file);
+			fread(key_pem, sizeof(char), size2, fkey_file);
+
+			daemon = MHD_start_daemon(MHD_USE_AUTO | MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_DEBUG, WebHttpPort, NULL, NULL,
+				&answer_to_connection, NULL,
+				MHD_OPTION_HTTPS_MEM_KEY, key_pem,
+				MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
+				MHD_OPTION_END);
+		}
+		
+
+		if (NULL != fcert_file) {
+			fclose(fcert_file);
+		}
+
+		if (NULL != fkey_file) {
+			fclose(fkey_file);
+		}
+	}
+	else {
+		UE_LOG(UT4WebAdmin, Log, TEXT("Starting HTTP server without SSL"));
+		daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG, WebHttpPort, NULL, NULL,
+			&answer_to_connection, NULL, MHD_OPTION_END);
+	}
+	
+
+	if (daemon == NULL) {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" UT4WebAdmin failed to start http(s) server !"));
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
+	}
+	else {
+		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
+		UE_LOG(UT4WebAdmin, Log, TEXT(" UT4WebAdmin started at port: %i "), WebHttpPort);
+		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
 	}
 }
-#endif
+
+
 
 void UUT4WebAdmin::Stop()
 {
-	#if defined(USE_CIVETWEB)
-		StopCivetWeb();
-	#endif
+	if (NULL != daemon) {
+		MHD_stop_daemon(daemon);
+	}
 }
 
 void UUT4WebAdmin::Tick(float DeltaTime)
