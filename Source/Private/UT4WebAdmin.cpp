@@ -83,63 +83,55 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 	return JsonObject;
 }
 
-/*
-int GameInfoHandler(struct mg_connection *conn, void *cbdata)
+
+int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
+	size_t *upload_data_size, void **con_cls)
 {
+	int ret;
+	struct MHD_Response *response;
 
-	//UE_LOG(UT4WebAdmin, Log, TEXT(" MatchInfoHandler "));
-	const struct mg_request_info *request_info = mg_get_request_info(conn);
+	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
 
-	if (strcmp(request_info->request_method, "GET") == 0) {
 
-		FString JsonText = "";
-
-		mg_printf(conn,
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: application/json\r\n"
-			"Connection: close\r\n\r\n");
-
+		// TODO set Content-Type application/json
+		// see MHD_HTTP_HEADER_CONTENT_TYPE
 		TSharedPtr<FJsonObject> matchInfoJSON = GetGameInfoJSON();
 
-		FString OutputString;
-		TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&OutputString);
+		FString JsonText;
+		TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonText);
 		FJsonSerializer::Serialize(matchInfoJSON.ToSharedRef(), Writer);
 
-		JsonText += OutputString;
+		const char* jsonChar = TCHAR_TO_UTF8(*JsonText);
 
-		mg_printf(conn, TCHAR_TO_ANSI(*JsonText));
+		response = MHD_create_response_from_buffer(strlen(jsonChar),
+			(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
 
-		return 1;
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+		MHD_destroy_response(response);
 	}
 
-	
 
-	return 0;
-}*/
+	return ret;
+}
 
-
-int answer_to_connection(void *cls, struct MHD_Connection *connection,
+int handle_serve_file(void *cls,
+	struct MHD_Connection *connection,
 	const char *url,
 	const char *method, // GET / POST / PUT ...
 	const char *version, // HTML version 1.1
 	const char *upload_data,
 	size_t *upload_data_size, void **con_cls)
 {
-
-	// TODO handle POST methods in the future
-	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) &&
-		(0 != strcmp(method, MHD_HTTP_METHOD_HEAD)))
-		return MHD_NO;
-
 	struct MHD_Response *response;
-	int ret;
 	char *path = NULL;
+	int ret;
 
 	// redirect from http://myserver:port/ to http://myserver:port/index.html
 	if (strcmp(url, "/") == 0) {
 		path = "/index.html";
 	}
-	else {
+
+	if (NULL == path) {
 		path = new char[strlen(url) + 1];
 		strcpy(path, url);
 	}
@@ -182,10 +174,33 @@ int answer_to_connection(void *cls, struct MHD_Connection *connection,
 			(void*)notExist, MHD_RESPMEM_PERSISTENT);
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 	}
-	
-	MHD_destroy_response(response);
 
+	MHD_destroy_response(response);
 	return ret;
+}
+
+int answer_to_connection(void *cls, 
+	struct MHD_Connection *connection,
+	const char *url,
+	const char *method, // GET / POST / PUT ...
+	const char *version, // HTML version 1.1
+	const char *upload_data,
+	size_t *upload_data_size, void **con_cls)
+{
+	// TODO handle POST methods in the future
+	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) &&
+		(0 != strcmp(method, MHD_HTTP_METHOD_HEAD)))
+		return MHD_NO;
+
+	// TODO check user authentification
+
+	if (strcmp(url, "/gameinfo") == 0) {
+		// TODO GET JSON GAME INFO
+		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+	}
+	else {
+		return handle_serve_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+	}
 }
 
 void UUT4WebAdmin::StartMicroHttp()
