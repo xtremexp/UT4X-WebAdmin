@@ -38,6 +38,14 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 
 	void StartMicroHttp();
 
+	// Main administrator username
+	UPROPERTY(Config)
+		FString HeadAdminUsername;
+
+	// Main administrator password
+	UPROPERTY(Config)
+		FString HeadAdminPassword;
+
 	// Note: disabled some properties until civetweb can use them properly!
 	/* Http port of webserver */
 	UPROPERTY(Config)

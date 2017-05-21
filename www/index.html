@@ -21,7 +21,7 @@
 			<ul class="nav nav-pills nav-stacked">
 			  <li role="presentation" class="active"><a href="#" onclick="javascript:loadPage('gameinfo.html')">Current Game</a></li>
 			  <li role="presentation" onclick="javascript:loadPage('admin.html')"><a href="#">Administration</a></li>
-			  <li role="presentation" onclick="javascript:loadPage('logout.html')"><a href="#">Log Out</a></li>
+			  <li role="presentation" onclick="logout()"><a href="#">Log Out</a></li>
 			</ul>
 		</div>
 		<div id="content">
@@ -37,6 +37,11 @@
 				$("#content").load(page, function(responseTxt, statusTxt, xhr){
 					console.log(xhr);
 				});
+			}
+			
+			function logout(){
+				document.execCommand("ClearAuthenticationCache");
+				window.location = 'http://logout@'+window.location.host;
 			}
 		</script>
 	</body>

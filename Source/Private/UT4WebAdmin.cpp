@@ -5,7 +5,7 @@
 #define UT4WA_WWW_FOLDER "www"
 
 #define PAGE "<html><head><title>File not found</title></head><body>File not found</body></html>"
-#define DENIED2 "<html><head><title>libmicrohttpd demo</title></head><body>Access denied</body></html>"
+#define DENIED2 "<html><head><title>Acces denied</title></head><body>Access denied</body></html>"
 #define OPAQUE "11733b200778ce33060f31c9af70a870ba96ddd4"
 
 UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
@@ -25,6 +25,14 @@ void UUT4WebAdmin::Init()
 	if (WebHttpPort == 0)
 	{
 		WebHttpPort = 8080;
+	}
+
+	if (HeadAdminUsername.IsEmpty()) {
+		HeadAdminUsername = FString("webadmin");
+	}
+
+	if (HeadAdminPassword.IsEmpty()) {
+		HeadAdminPassword = FString("webadminpassword");
 	}
 
 
@@ -223,6 +231,8 @@ int answer_to_connection(void *cls,
 		password,
 		300);
 
+	FString usernameFStr = ANSI_TO_TCHAR(username);
+
 	// bad username / password return invalid authentification
 	if ((ret == MHD_INVALID_NONCE) ||
 		(ret == MHD_NO))
@@ -237,7 +247,12 @@ int answer_to_connection(void *cls,
 			response,
 			(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
 		MHD_destroy_response(response);
+
+		UE_LOG(UT4WebAdmin, Warning, TEXT("User '%s' failed to authenticate."), *usernameFStr);
 		return ret;
+	}
+	else {
+		UE_LOG(UT4WebAdmin, Log, TEXT("User '%s' authenticated."), *usernameFStr);
 	}
 
 	// USER AUTHENTICATED LET'S GO !
@@ -246,8 +261,6 @@ int answer_to_connection(void *cls,
 	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) &&
 		(0 != strcmp(method, MHD_HTTP_METHOD_HEAD)))
 		return MHD_NO;
-
-	// TODO check user authentification
 
 	if (strcmp(url, "/gameinfo") == 0) {
 		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
