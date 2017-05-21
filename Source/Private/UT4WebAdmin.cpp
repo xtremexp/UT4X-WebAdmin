@@ -84,32 +84,41 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 }
 
 
-int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
+// Method to serve json file to client
+int serve_json_file(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
+	size_t *upload_data_size, void **con_cls, TSharedPtr<FJsonObject> json)
 {
 	int ret;
 	struct MHD_Response *response;
 
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
+	FString JsonText;
+	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonText);
+	FJsonSerializer::Serialize(json.ToSharedRef(), Writer);
 
-		TSharedPtr<FJsonObject> matchInfoJSON = GetGameInfoJSON();
+	const char* jsonChar = TCHAR_TO_UTF8(*JsonText);
 
-		FString JsonText;
-		TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonText);
-		FJsonSerializer::Serialize(matchInfoJSON.ToSharedRef(), Writer);
+	response = MHD_create_response_from_buffer(strlen(jsonChar),
+		(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
+	MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, "application/json");
 
-		const char* jsonChar = TCHAR_TO_UTF8(*JsonText);
-
-		response = MHD_create_response_from_buffer(strlen(jsonChar),
-			(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
-		MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, "application/json");
-
-		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-		MHD_destroy_response(response);
-	}
-
+	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+	MHD_destroy_response(response);
 
 	return ret;
+}
+
+int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
+	size_t *upload_data_size, void **con_cls)
+{
+	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
+		TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
+		return serve_json_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls, matchInfoJson);
+	}
+	else {
+		// TODO handle post request for kick/ban/modify server info ...
+	}
+
+	return MHD_NO;
 }
 
 // Server files from root folder
