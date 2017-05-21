@@ -1,5 +1,5 @@
 .left {
-	float-align: left;
+	float: left;
 }
 
 .left#left-menu {
