@@ -112,6 +112,10 @@ int handle_game_info(void *cls, struct MHD_Connection *connection, const char *u
 	return ret;
 }
 
+// Server files from root folder
+const FString wwwStr = FPaths::GamePluginsDir() + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER + "/";
+
+
 int handle_serve_file(void *cls,
 	struct MHD_Connection *connection,
 	const char *url,
@@ -126,26 +130,24 @@ int handle_serve_file(void *cls,
 
 	// redirect from http://myserver:port/ to http://myserver:port/index.html
 	if (strcmp(url, "/") == 0) {
-		path = "/index.html";
+		path = "index.html";
 	}
 
 	if (NULL == path) {
-		path = new char[strlen(url) + 1];
-		strcpy(path, url);
+		path = new char[strlen(&url[1]) + 1];
+		strcpy(path, &url[1]);
 	}
 
-	// Server files from root folder
-	FString wwwStr = FPaths::GamePluginsDir() + "/" + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER;
-	const char *root = TCHAR_TO_ANSI(*wwwStr);
+	const char *www = TCHAR_TO_ANSI(*wwwStr);
 
 	// calculate the required buffer size (also accounting for the null terminator):
-	int bufferSize = strlen(root) + strlen(path) + 1;
+	int bufferSize = strlen(www) + strlen(path) + 1;
 
 	// allocate enough memory for the concatenated string:
 	char* concatString = new char[bufferSize];
 
 	// copy strings one and two over to the new buffer:
-	strcpy(concatString, root);
+	strcpy(concatString, www);
 	strcat(concatString, path);
 
 
