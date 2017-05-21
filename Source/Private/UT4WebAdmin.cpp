@@ -5,7 +5,8 @@
 #define UT4WA_WWW_FOLDER "www"
 
 #define PAGE "<html><head><title>File not found</title></head><body>File not found</body></html>"
-
+#define DENIED2 "<html><head><title>libmicrohttpd demo</title></head><body>Access denied</body></html>"
+#define OPAQUE "11733b200778ce33060f31c9af70a870ba96ddd4"
 
 UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
@@ -188,6 +189,8 @@ int handle_serve_file(void *cls,
 	return ret;
 }
 
+
+
 int answer_to_connection(void *cls, 
 	struct MHD_Connection *connection,
 	const char *url,
@@ -196,6 +199,49 @@ int answer_to_connection(void *cls,
 	const char *upload_data,
 	size_t *upload_data_size, void **con_cls)
 {
+	int ret;
+	struct MHD_Response *response;
+	char *username;
+	const char *realm = "someusername";
+	const char *password = "somepassword";
+	username = MHD_digest_auth_get_username(connection);
+
+	// username authentification
+	if (NULL == username) {
+		response = MHD_create_response_from_buffer(strlen(DENIED2), DENIED2, MHD_RESPMEM_PERSISTENT);
+		ret = MHD_queue_auth_fail_response(connection, realm,
+			realm,
+			response,
+			MHD_NO);
+		MHD_destroy_response(response);
+		return ret;
+	}
+
+	// check username / password OK
+	ret = MHD_digest_auth_check(connection, realm,
+		username,
+		password,
+		300);
+
+	// bad username / password return invalid authentification
+	if ((ret == MHD_INVALID_NONCE) ||
+		(ret == MHD_NO))
+	{
+		response = MHD_create_response_from_buffer(strlen(DENIED2),
+			DENIED2,
+			MHD_RESPMEM_PERSISTENT);
+		if (NULL == response)
+			return MHD_NO;
+		ret = MHD_queue_auth_fail_response(connection, realm,
+			OPAQUE,
+			response,
+			(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
+		MHD_destroy_response(response);
+		return ret;
+	}
+
+	// USER AUTHENTICATED LET'S GO !
+
 	// TODO handle POST methods in the future
 	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) &&
 		(0 != strcmp(method, MHD_HTTP_METHOD_HEAD)))
@@ -204,7 +250,6 @@ int answer_to_connection(void *cls,
 	// TODO check user authentification
 
 	if (strcmp(url, "/gameinfo") == 0) {
-		// TODO GET JSON GAME INFO
 		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
 	}
 	else {
