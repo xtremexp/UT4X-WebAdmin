@@ -1,0 +1,11 @@
+.left {
+	float-align: left;
+}
+
+.left#left-menu {
+	max-width: 150px;
+}
+
+#top-menu {
+	text-align: center;
+}
