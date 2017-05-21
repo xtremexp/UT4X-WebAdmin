@@ -92,9 +92,6 @@ int handle_game_info(void *cls, struct MHD_Connection *connection, const char *u
 
 	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
 
-
-		// TODO set Content-Type application/json
-		// see MHD_HTTP_HEADER_CONTENT_TYPE
 		TSharedPtr<FJsonObject> matchInfoJSON = GetGameInfoJSON();
 
 		FString JsonText;
@@ -105,6 +102,7 @@ int handle_game_info(void *cls, struct MHD_Connection *connection, const char *u
 
 		response = MHD_create_response_from_buffer(strlen(jsonChar),
 			(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
+		MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, "application/json");
 
 		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 		MHD_destroy_response(response);
