@@ -19,10 +19,28 @@
 		</div>
 		<div class="left" id="left-menu">
 			<ul class="nav nav-pills nav-stacked">
-			  <li role="presentation" class="active"><a href="#">Current Game</a></li>
-			  <li role="presentation"><a href="#">Administration</a></li>
-			  <li role="presentation"><a href="#">Log Out</a></li>
+			  <li role="presentation" class="active"><a href="#" onclick="javascript:loadPage('gameinfo.html')">Current Game</a></li>
+			  <li role="presentation" onclick="javascript:loadPage('admin.html')"><a href="#">Administration</a></li>
+			  <li role="presentation" onclick="javascript:loadPage('logout.html')"><a href="#">Log Out</a></li>
 			</ul>
 		</div>
+		<div id="content">
+		</div>
+		
+		
+		
+		<script type="text/javascript">
+		
+			loadPage("login.html");
+		
+			function loadPage(page)
+			{
+				page = "/" + page;
+				
+				$("#content").load(page, function(responseTxt, statusTxt, xhr){
+					console.log(xhr);
+				});
+			}
+		</script>
 	</body>
 </html>
