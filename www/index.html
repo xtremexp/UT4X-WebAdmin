@@ -15,7 +15,8 @@
 	
 	<body>
 		<div id="top-menu">
-			<h1>Welcome to UT4 WebAdmin !</h1>
+			<h1 id="server_name"></h1>
+			<h2 id="server_motd"></h2>
 		</div>
 		<div class="left" id="left-menu">
 			<ul class="nav nav-pills nav-stacked">
@@ -26,10 +27,23 @@
 		</div>
 		<div id="content">
 		</div>
-		
+		<!--
+		<div>
+			<form action="/serverinfo" method="post">
+				Server Name: <input type="text" name="server_name"><br>
+				Server MOTD: <input type="text" name="server_motd">
+				
+				<input type="submit" value="Save"/>
+			</form>
+		</div>
+		-->
 		
 		
 		<script type="text/javascript">
+			$( document ).ready(function() {
+				loadServerInfo();
+			});
+		
 			function loadPage(page)
 			{
 				page = "/" + page;
@@ -42,6 +56,14 @@
 			function logout(){
 				document.execCommand("ClearAuthenticationCache");
 				window.location = 'http://logout@'+window.location.host;
+			}
+			
+			function loadServerInfo(){
+				$.getJSON( "serverinfo", function( data ) {
+					$('#server_name').html(data.ServerName);
+					$('#server_motd').html(data.ServerMOTD);
+					$('#server_description').html(data.ServerDescription);
+				});
 			}
 		</script>
 	</body>

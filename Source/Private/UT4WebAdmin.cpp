@@ -39,6 +39,29 @@ void UUT4WebAdmin::Init()
 	StartMicroHttp();
 }
 
+
+TSharedPtr<FJsonObject> GetServerInfoJSON()
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);;
+
+	AUTBaseGameMode* BaseGameMode;
+	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+
+	AUTGameState* BaseGameState;
+	BaseGameState = Cast<AUTGameState>(GWorld->GetGameState());
+
+	if (BaseGameState) {
+
+		// GameMode
+		JsonObject->SetStringField(TEXT("ServerName"), BaseGameState->ServerName);
+		JsonObject->SetStringField(TEXT("ServerMOTD"), BaseGameState->ServerMOTD);
+		JsonObject->SetStringField(TEXT("ServerDescription"), BaseGameState->ServerDescription);
+	}
+
+
+	return JsonObject;
+}
+
 TSharedPtr<FJsonObject> GetGameInfoJSON()
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);;
@@ -125,6 +148,21 @@ int handle_game_info(void *cls, struct MHD_Connection *connection, const char *u
 	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
 		TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
 		return serve_json_file(connection, matchInfoJson);
+	}
+	else {
+		// TODO handle post request for kick/ban/modify server info ...
+	}
+
+	return MHD_NO;
+}
+
+
+int handle_server_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
+	size_t *upload_data_size, void **con_cls)
+{
+	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
+		TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON();
+		return serve_json_file(connection, serverInfoJson);
 	}
 	else {
 		// TODO handle post request for kick/ban/modify server info ...
@@ -268,6 +306,9 @@ int answer_to_connection(void *cls,
 
 	if (strcmp(url, "/gameinfo") == 0) {
 		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+	} 
+	else if (strcmp(url, "/serverinfo") == 0) {
+		return handle_server_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
 	}
 	else {
 		return handle_serve_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
