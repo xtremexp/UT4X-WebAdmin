@@ -94,8 +94,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 
 
 // Method to serve json file to client
-int serve_json_file(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls, TSharedPtr<FJsonObject> json)
+int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> json)
 {
 	int ret;
 	struct MHD_Response *response;
@@ -125,7 +124,7 @@ int handle_game_info(void *cls, struct MHD_Connection *connection, const char *u
 {
 	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
 		TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
-		return serve_json_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls, matchInfoJson);
+		return serve_json_file(connection, matchInfoJson);
 	}
 	else {
 		// TODO handle post request for kick/ban/modify server info ...
