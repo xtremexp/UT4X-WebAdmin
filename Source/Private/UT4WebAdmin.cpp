@@ -104,7 +104,11 @@ int serve_json_file(void *cls, struct MHD_Connection *connection, const char *ur
 	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonText);
 	FJsonSerializer::Serialize(json.ToSharedRef(), Writer);
 
-	const char* jsonChar = TCHAR_TO_UTF8(*JsonText);
+	std::string tmpStr = TCHAR_TO_ANSI(*JsonText);
+
+	char *jsonChar = new char[tmpStr.length() + 1];
+	strcpy(jsonChar, tmpStr.c_str());
+
 
 	response = MHD_create_response_from_buffer(strlen(jsonChar),
 		(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
@@ -198,7 +202,8 @@ int handle_serve_file(void *cls,
 }
 
 
-
+
+
 int answer_to_connection(void *cls, 
 	struct MHD_Connection *connection,
 	const char *url,
