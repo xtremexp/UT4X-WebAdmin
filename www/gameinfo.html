@@ -1,0 +1,114 @@
+<div class="panel panel-primary">
+	<div class="panel-heading">
+		<h3 class="panel-title">Match Info</h3>
+	</div>
+	<div class="panel-body">
+		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+		Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+		Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
+		Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+	</div>
+	<div class="panel-footer">Panel footer</div>
+</div>
+<div class="panel panel-primary">
+	<div class="panel-heading">
+		<h3 class="panel-title">Players</h3>
+	</div>
+	<table class="table">
+		<thead>
+			<tr>
+				<th>Player Name</th>
+				<th>Score</th>
+				<th>Kills</th>
+				<th>ELO</th>
+				<th>Team</th>
+				<th>Spectator</th>
+				<th>Action</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr style="background-color: #e49898"><!-- red -->
+				<td>Winter</td>
+				<td>128</td>
+				<td>30</td>
+				<td>2345</td>
+				<td>red</td>
+				<td>&nbsp;</td>
+				<td>
+					<div class="btn-group">
+					  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Action <span class="caret"></span>
+					  </button>
+					  <ul class="dropdown-menu">
+						<li><a href="#">Kick</a></li>
+						<li><a href="#">Ban</a></li>
+						<li><a href="#">Mute</a></li>
+					  </ul>
+					</div>
+				</td>
+			</tr>
+			<tr style="background-color: #b3b3f9"><!-- blue -->
+				<td>Blackshy</td>
+				<td>140</td>
+				<td>41</td>
+				<td>2401</td>
+				<td>blue</td>
+				<td>&nbsp;</td>
+				<td>
+					<div class="btn-group">
+					  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Action <span class="caret"></span>
+					  </button>
+					  <ul class="dropdown-menu">
+						<li><a href="#">Kick</a></li>
+						<li><a href="#">Ban</a></li>
+						<li><a href="#">Mute</a></li>
+					  </ul>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td>Steve</td>
+				<td>0</td>
+				<td>0</td>
+				<td>2345</td>
+				<td>white</td>
+				<td>X</td>
+				<td>
+					<div class="btn-group">
+					  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Action <span class="caret"></span>
+					  </button>
+					  <ul class="dropdown-menu">
+						<li><a href="#">Kick</a></li>
+						<li><a href="#">Ban</a></li>
+						<li><a href="#">Mute</a></li>
+					  </ul>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+			
+			</tr>
+		</tfoot>
+	</table>
+</div>
+
+
+<script type="text/javascript">
+
+	getGameInfoData();
+
+	function getGameInfoData(){
+		$.ajax({
+			type: "get",
+			url: "/gameinfo",
+			cache: false,
+			success: function(data) {
+				console.log(data);
+			}
+		});
+	}
+</script>

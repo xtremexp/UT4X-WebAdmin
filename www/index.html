@@ -15,17 +15,21 @@
 	
 	<body>
 		<div id="top-menu">
+			<!-- TEMP direct link until web server retrieved correctly image files-->
+			<img class="left" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Unreal_Tournament_%282014_video_game%29_logo.png/320px-Unreal_Tournament_%282014_video_game%29_logo.png"/>
 			<h1 id="server_name"></h1>
 			<h2 id="server_motd"></h2>
 		</div>
-		<div class="left" id="left-menu">
-			<ul class="nav nav-pills nav-stacked">
-			  <li role="presentation" class="active"><a href="#" onclick="javascript:loadPage('gameinfo.html')">Current Game</a></li>
-			  <li role="presentation" onclick="javascript:loadPage('admin.html')"><a href="#">Administration</a></li>
-			  <li role="presentation" onclick="logout()"><a href="#">Log Out</a></li>
-			</ul>
-		</div>
-		<div id="content">
+		<div class="content">
+			<div class="leftPanel">
+				<ul class="nav nav-pills nav-stacked">
+				  <li role="presentation" class="active"><a href="#" onclick="javascript:loadPage('gameinfo.html')">Current Game</a></li>
+				  <li role="presentation" onclick="javascript:loadPage('admin.html')"><a href="#">Administration</a></li>
+				  <li role="presentation" onclick="javascript:logout()"><a href="#">Log Out</a></li>
+				</ul>
+			</div>
+			<div class="centerPanel" id="centerContent">
+			</div>
 		</div>
 		<!--
 		<div>
@@ -48,7 +52,7 @@
 			{
 				page = "/" + page;
 				
-				$("#content").load(page, function(responseTxt, statusTxt, xhr){
+				$("#centerContent").load(page, function(responseTxt, statusTxt, xhr){
 					console.log(xhr);
 				});
 			}

@@ -2,16 +2,35 @@
 	float: left;
 }
 
-.left#left-menu {
-	width: 150px;
+.content {
 	position: absolute;
 	height: 100%;
+	
+}
+
+.leftPanel {
+	float: left;
+	width: 150px;
+	position: relative;
+	height: 100%;
 	background-color: #b7b7b7;
+	margin: 10px;
+}
+
+.centerPanel {
+	float: left;
+	position: relative;
+	margin: 10px;
+	width: 800px;
 }
 
 #top-menu {
 	text-align: center;
 	background-color: #b7b7b7;
+	height: 122px;
+	margin: 10px;
+	padding: 2px;
+	border-radius: 5px;
 }
 
 body {
