@@ -276,7 +276,7 @@ void UUT4WebAdminHttpServer::Start()
 
 	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 
-	bool IsGameInstanceServer = false;
+	bool IsGameInstanceServer = BaseGameMode->IsGameInstanceServer();
 
 	int httpPort = WebHttpPort;
 
@@ -285,11 +285,8 @@ void UUT4WebAdminHttpServer::Start()
 	}
 
 	// TODO get lobby instance port and add 100
-	// FIX me
 	if (IsGameInstanceServer) {
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" Impossible to start UT4WebAdmin for lobby instances."));
 		httpPort = 8100;
-		return;
 	}
 
 	// SSL not working yet need some more investigation
@@ -319,13 +316,19 @@ void UUT4WebAdminHttpServer::Stop()
 		MHD_stop_daemon(daemon);
 	}
 }
+bool started = false;
+
 
 void UUT4WebAdminHttpServer::Tick(float DeltaTime)
 {
 	// TODO
+	if (!started && GWorld != NULL && NULL == daemon) {
+		started = true;
+		Start();
+	}
 }
 
 TStatId UUT4WebAdminHttpServer::GetStatId() const
 {
-	RETURN_QUICK_DECLARE_CYCLE_STAT(UUT4WebAdmin, STATGROUP_Tickables);
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UUT4WebAdminHttpServer, STATGROUP_Tickables);
 }

@@ -13,25 +13,13 @@ DEFINE_LOG_CATEGORY_STATIC(UT4WebAdmin, Log, All);
 
 
 UCLASS(Config=UT4WebAdmin)
-class UUT4WebAdmin : public UObject, public FTickableGameObject
+class UUT4WebAdmin : public UObject
 {
 
 	GENERATED_UCLASS_BODY()
 
 	void Start();
 	void Stop();
-
-	virtual void Tick(float DeltaTime) override;
-	virtual TStatId GetStatId() const override;
-	virtual bool IsTickable() const override
-	{
-		return true;
-	}
-	virtual bool IsTickableWhenPaused() const override
-	{
-		return true;
-	}
-
 
 	// Main administrator username
 	UPROPERTY(Config)
