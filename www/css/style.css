@@ -2,6 +2,18 @@
 	float: left;
 }
 
+.blueTeam  {
+	background-color: #bcbcec;
+}
+
+.redTeam  {
+	background-color: #ff9f9f;
+}
+
+.textRight {
+	text-align: right;
+}
+
 .content {
 	position: absolute;
 	height: 100%;

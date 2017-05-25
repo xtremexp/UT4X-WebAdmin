@@ -1,0 +1,85 @@
+{
+	"ServerType": "Lobby",
+	"LobbyInfo":
+	{
+		"LobbyPassword": "fuckfuck",
+		"NumPlayers": 4,
+		"NumMatches": 1,
+		"GameInstances": [
+			{
+				"InstancePort": 8100,
+				"CurrentState": "InProgress",
+				"bPrivateMatch": 1,
+				"bSpectatable": 0,
+				"bJoinAnytime": 1,
+				"bRankLocked": 0,
+				"GameInstanceID": 1,
+				"GameInstanceGUID": "CF567E3645385284425C7E9820B72579",
+				"NumPlayersInMatch": 4,
+				"NumSpectatorsInMatch": 1,
+				"RankCheck": 22,
+				"InstanceLaunchTime": 3173.84521484375,
+				"CustomGameName": "WinterIsComing's Game",
+				"MapInfo":
+				{
+					"Title": "FR-Fort",
+					"Author": "Stuart Fitzsimmons",
+					"Description": "Holden demands his flag back!",
+					"MapScreenshotReference": "/Game/RestrictedAssets/Maps/LevelShots/shot_fort.shot_fort"
+				},
+				"AvailablePlayers": [
+					{
+						"PlayerID": "1c5e4a778c45c4a564e541c94ce45ca4",
+						"bIsSpectator": false,
+						"PlayerName": "WinterIsComing",
+						"PlayerScore": 4,
+						"RankCheck": 22,
+						"XPLevel": 1265833,
+						"TeamNum": 0,
+						"Avatar": "UT.Avatar.0"
+					},
+					{
+						"PlayerID": "212ea704416711e7a91992ebcb67fe33",
+						"bIsSpectator": false,
+						"PlayerName": "SummerIsComing",
+						"PlayerScore": 24,
+						"RankCheck": 22,
+						"XPLevel": 95000,
+						"TeamNum": 0,
+						"Avatar": "UT.Avatar.0"
+					},
+					{
+						"PlayerID": "b2959bc68e2a4412aa2a57c0afa62767",
+						"bIsSpectator": false,
+						"PlayerName": "TheWindsOfWinter",
+						"PlayerScore": 13,
+						"RankCheck": 22,
+						"XPLevel": 119420,
+						"TeamNum": 1,
+						"Avatar": "UT.Avatar.1"
+					},
+					{
+						"PlayerID": "c1b5f7db75b61b54f87b651b2d2f15c42",
+						"bIsSpectator": false,
+						"PlayerName": "GameOfThrones",
+						"PlayerScore": 3,
+						"RankCheck": 22,
+						"XPLevel": 34370,
+						"TeamNum": 1,
+						"Avatar": "UT.Avatar.1"
+					},
+					{
+						"PlayerID": "b60e6fd4a82fe48cf9a59857eba498aa9",
+						"bIsSpectator": true,
+						"PlayerName": "Big Brother",
+						"PlayerScore": 0,
+						"RankCheck": 22,
+						"XPLevel": 58421,
+						"TeamNum": 0,
+						"Avatar": "UT.Avatar.1"
+					}
+				]
+			}
+		]
+	}
+}

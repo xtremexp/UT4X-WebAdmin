@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="ut4waApp">
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<title>UT4 Web Administration</title>
 
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		
+		<script src="js/angular164.min.js"></script>
+		<script src="js/ng-module.js"></script>
 		
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
@@ -29,19 +32,62 @@
 				</ul>
 			</div>
 			<div class="centerPanel" id="centerContent">
+				<div ng-controller="GameInfoController as giCtrl">
+					<div ng-if="!hasMatches">
+					NO MATCHS!
+					</div>
+					<div ng-if="hasMatches">
+						<div ng-repeat="gameInstance in lobbyInfo.GameInstances">
+							<div class="panel panel-primary">
+							  <div class="panel-heading">
+								<h3 class="panel-title">{{gameInstance.CustomGameName}} - {{gameInstance.NumPlayersInMatch}} player(s)</h3>
+							  </div>
+							  <div class="panel-body">
+								<div>
+									<div class="row">
+									  <div class="col-sm-6 col-md-4">
+										<div class="thumbnail">
+										  <img src="/img/maps/{{gameInstance.MapInfo.Title}}.png" alt="...">
+										  <div class="caption">
+											<h3>{{gameInstance.MapInfo.Title}}</h3>
+											<p>{{gameInstance.MapInfo.Author}}</p>
+										  </div>
+										</div>
+									  </div>
+									</div>
+									<table class="table">
+										<thead>
+											<tr>
+												<td>Name</td>
+												<td>Id</td>
+												<td>Score</td>
+												<td>XP</td>
+												<td>Spec?</td>
+												<td>Avatar</td>
+											</tr>
+										</thead>
+										<tbody>
+											<tr ng-repeat="player in gameInstance.AvailablePlayers"
+												ng-class="{ 'redTeam': (player.TeamNum == 0 && !player.bIsSpectator), 'blueTeam': (player.TeamNum == 1 && !player.bIsSpectator )}"
+												>
+												<td>{{player.PlayerName}}</td>
+												<td>{{player.PlayerID}}</td>
+												<td class="textRight">{{player.PlayerScore}}</td>
+												<td class="textRight">{{player.XPLevel}}</td>
+												<td><span ng-if="player.bIsSpectator">X</span></td>
+												<td>{{player.Avatar}}</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							  </div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
-		<!--
-		<div>
-			<form action="/serverinfo" method="post">
-				Server Name: <input type="text" name="server_name"><br>
-				Server MOTD: <input type="text" name="server_motd">
-				
-				<input type="submit" value="Save"/>
-			</form>
-		</div>
-		-->
-		
+
 		
 		<script type="text/javascript">
 			$( document ).ready(function() {
