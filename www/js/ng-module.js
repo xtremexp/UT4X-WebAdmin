@@ -3,6 +3,10 @@ var ut4waApp = angular.module('ut4waApp', [])
 
 	var url = "/gameinfo";
 	url = "/js/gameinfo-test.json";
+	
+	$scope.toMinutesSec = function(seconds){
+		return new Date(seconds * 1000).toISOString().substr(14, 5);
+	};
   
 	$http.get(url).then(function(response) {
 		console.log(response);

@@ -40,7 +40,7 @@
 						<div ng-repeat="gameInstance in lobbyInfo.GameInstances">
 							<div class="panel panel-primary">
 							  <div class="panel-heading">
-								<h3 class="panel-title">{{gameInstance.CustomGameName}} - {{gameInstance.NumPlayersInMatch}} player(s)</h3>
+								<h3 class="panel-title">{{gameInstance.CustomGameName}} - {{gameInstance.Ruleset.Title}} - {{gameInstance.MatchUpdate.MatchState}} - {{gameInstance.NumPlayersInMatch}} / {{gameInstance.Ruleset.MaxPlayers}} player(s)</h3>
 							  </div>
 							  <div class="panel-body">
 								<div>
@@ -51,19 +51,31 @@
 										  <div class="caption">
 											<h3>{{gameInstance.MapInfo.Title}}</h3>
 											<p>{{gameInstance.MapInfo.Author}}</p>
+											Switch to:
+											<select>
+												<!-- TODO red background color if map is not from epic and has no redirectUrl set -->
+												<option ng-repeat="mapInfo in gameInstance.Ruleset.MapList">{{mapInfo.MapAssetName}}</option>
+											</select>
+											
 										  </div>
 										</div>
 									  </div>
+										<div>
+											<h1>Time: {{toMinutesSec(gameInstance.MatchUpdate.GameTime)}} / {{toMinutesSec(gameInstance.MatchUpdate.TimeLimit)}}</h1>
+										</div>
+										<div ng-if="gameInstance.MatchUpdate.GoalScore > 0">
+											<h1>Goal Score: {{gameInstance.MatchUpdate.GoalScore}}</h1>
+										</div>
 									</div>
 									<table class="table">
 										<thead>
 											<tr>
-												<td>Name</td>
-												<td>Id</td>
-												<td>Score</td>
-												<td>XP</td>
-												<td>Spec?</td>
-												<td>Avatar</td>
+												<th>Name</th>
+												<th>Id</th>
+												<th>Score</th>
+												<th>XP</th>
+												<th>Spec?</th>
+												<th>Avatar</th>
 											</tr>
 										</thead>
 										<tbody>

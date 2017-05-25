@@ -2,6 +2,69 @@
 #include "UT4WebAdminGameInfo.h"
 
 
+
+// WeakObjectPtr<AUTReplicatedGameRuleset>
+
+TSharedPtr<FJsonObject> GetGameRulesetJSON(TWeakObjectPtr<AUTReplicatedGameRuleset> GameRuleset) 
+{
+	TSharedPtr<FJsonObject> RulesetJson = MakeShareable(new FJsonObject);
+
+	if (GameRuleset != NULL) {
+		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
+		RulesetJson->SetStringField(TEXT("Description"), GameRuleset->Description);
+		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
+		RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
+
+		TArray<TSharedPtr<FJsonValue>> MapListJson;
+		// maplist useful to know which map admin can switch to
+		for (int32 MapIdx = 0; MapIdx < GameRuleset->MapList.Num(); MapIdx++)
+		{
+			TSharedPtr<FJsonObject> MapJson = MakeShareable(new FJsonObject);
+			MapJson->SetStringField(TEXT("MapPackageName"), GameRuleset->MapList[MapIdx]->MapPackageName);
+			MapJson->SetStringField(TEXT("MapAssetName"), GameRuleset->MapList[MapIdx]->MapAssetName);
+			MapJson->SetStringField(TEXT("Title"), GameRuleset->MapList[MapIdx]->Title);
+			// useful as to check if map is redirected or not
+			MapJson->SetStringField(TEXT("PackageURL"), GameRuleset->MapList[MapIdx]->Redirect.PackageURL);
+
+			MapListJson.Add(MakeShareable(new FJsonValueObject(MapJson)));
+		}
+
+		RulesetJson->SetArrayField(TEXT("MapList"), MapListJson);
+	}
+
+	return RulesetJson;
+}
+
+TSharedPtr<FJsonObject> GetMatchUpdateJSON(FMatchUpdate* FMatchUpdate)
+{
+	TSharedPtr<FJsonObject> MatchUpdateJson = MakeShareable(new FJsonObject);
+
+	if (FMatchUpdate) {
+		MatchUpdateJson->SetNumberField(TEXT("TimeLimit"), FMatchUpdate->TimeLimit);
+		MatchUpdateJson->SetNumberField(TEXT("GoalScore"), FMatchUpdate->GoalScore);
+		MatchUpdateJson->SetNumberField(TEXT("GameTime"), FMatchUpdate->GameTime);
+		MatchUpdateJson->SetNumberField(TEXT("TimeLimit"), FMatchUpdate->TimeLimit);
+		MatchUpdateJson->SetBoolField(TEXT("bMatchHasBegun"), FMatchUpdate->bMatchHasBegun);
+		MatchUpdateJson->SetBoolField(TEXT("bMatchHasEnded"), FMatchUpdate->bMatchHasEnded);
+		MatchUpdateJson->SetStringField(TEXT("MatchState"), FMatchUpdate->MatchState.ToString());
+		
+
+		TArray<TSharedPtr<FJsonValue>> TeamScoresJson;
+
+		for (int32 Idx = 0; Idx < FMatchUpdate->TeamScores.Num(); Idx++)
+		{
+			TSharedPtr<FJsonObject> TeamScoreJson = MakeShareable(new FJsonObject);
+			TeamScoreJson->SetNumberField(FString::FromInt(Idx), FMatchUpdate->TeamScores[Idx]);
+
+			TeamScoresJson.Add(MakeShareable(new FJsonValueObject(TeamScoreJson)));
+		}
+
+		MatchUpdateJson->SetArrayField(TEXT("TeamScores"), TeamScoresJson);
+	}
+
+	return MatchUpdateJson;
+}
+
 TSharedPtr<FJsonObject> GetRemotePlayerInfoJSON(FRemotePlayerInfo* RemotePlayerInfo)
 {
 	TSharedPtr<FJsonObject> RemotePlayerInfoJson = MakeShareable(new FJsonObject);
@@ -22,16 +85,20 @@ TSharedPtr<FJsonObject> GetRemotePlayerInfoJSON(FRemotePlayerInfo* RemotePlayerI
 
 // FRemotePlayerInfo
 
-TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MatchInfo)
+TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapInfo)
 {
 	TSharedPtr<FJsonObject> MapInfoJson = MakeShareable(new FJsonObject);
 
-	if (MatchInfo != NULL) {
-		MapInfoJson->SetStringField(TEXT("Title"), MatchInfo->Title);
-		MapInfoJson->SetStringField(TEXT("Author"), MatchInfo->Author);
-		MapInfoJson->SetStringField(TEXT("Title"), MatchInfo->Title);
-		MapInfoJson->SetStringField(TEXT("Description"), MatchInfo->Description);
-		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), MatchInfo->MapScreenshotReference);
+	if (MapInfo != NULL) {
+		MapInfoJson->SetStringField(TEXT("Title"), MapInfo->Title);
+		MapInfoJson->SetStringField(TEXT("Author"), MapInfo->Author);
+		MapInfoJson->SetStringField(TEXT("MapPackageName"), MapInfo->MapPackageName);
+		MapInfoJson->SetStringField(TEXT("MapAssetName"), MapInfo->MapAssetName);
+		MapInfoJson->SetStringField(TEXT("Description"), MapInfo->Description);
+		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), MapInfo->MapScreenshotReference);
+		MapInfoJson->SetStringField(TEXT("RedirectPackageName"), MapInfo->Redirect.PackageName);
+		MapInfoJson->SetStringField(TEXT("RedirectPackageURL"), MapInfo->Redirect.PackageURL);
+		
 	}
 
 	return MapInfoJson;
@@ -56,6 +123,12 @@ TSharedPtr<FJsonObject> GetLobbyMatchInfoJSON(AUTLobbyMatchInfo* AvailableMatch,
 		MatchJson->SetNumberField(TEXT("RankCheck"), AvailableMatch->RankCheck); // average rank
 		MatchJson->SetNumberField(TEXT("InstanceLaunchTime"), AvailableMatch->InstanceLaunchTime);
 		MatchJson->SetStringField(TEXT("CustomGameName"), AvailableMatch->CustomGameName);
+
+		TSharedPtr<FJsonObject> CurrentRulesetJson = GetGameRulesetJSON(AvailableMatch->CurrentRuleset);
+		MatchJson->SetObjectField(TEXT("Ruleset"), CurrentRulesetJson);
+
+		TSharedPtr<FJsonObject> MatchUpdateJson = GetMatchUpdateJSON(&AvailableMatch->MatchUpdate);
+		MatchJson->SetObjectField(TEXT("MatchUpdate"), MatchUpdateJson);
 
 		TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(AvailableMatch->InitialMapInfo);
 		MatchJson->SetObjectField(TEXT("MapInfo"), MapInfoJson);
