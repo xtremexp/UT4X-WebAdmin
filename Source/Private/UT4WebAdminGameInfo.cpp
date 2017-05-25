@@ -2,21 +2,66 @@
 #include "UT4WebAdminGameInfo.h"
 
 
-TSharedPtr<FJsonObject> GetMatchInfoJSON(AUTLobbyMatchInfo* AvailableMatch)
+TSharedPtr<FJsonObject> GetRemotePlayerInfoJSON(FRemotePlayerInfo* RemotePlayerInfo)
+{
+	TSharedPtr<FJsonObject> RemotePlayerInfoJson = MakeShareable(new FJsonObject);
+
+	RemotePlayerInfoJson->SetStringField(TEXT("PlayerID"), RemotePlayerInfo->PlayerID.ToString());
+	RemotePlayerInfoJson->SetBoolField(TEXT("bIsSpectator"), RemotePlayerInfo->bIsSpectator);
+	RemotePlayerInfoJson->SetStringField(TEXT("PlayerName"), RemotePlayerInfo->PlayerName);
+	RemotePlayerInfoJson->SetNumberField(TEXT("PlayerScore"), RemotePlayerInfo->PlayerScore);
+	RemotePlayerInfoJson->SetNumberField(TEXT("RankCheck"), RemotePlayerInfo->RankCheck);
+	RemotePlayerInfoJson->SetNumberField(TEXT("XPLevel"), RemotePlayerInfo->XPLevel);
+	RemotePlayerInfoJson->SetNumberField(TEXT("TeamNum"), RemotePlayerInfo->TeamNum); // 0 = Red, 1 = Blue
+	RemotePlayerInfoJson->SetStringField(TEXT("Avatar"), RemotePlayerInfo->Avatar.ToString());
+
+	return RemotePlayerInfoJson;
+}
+
+// FRemotePlayerInfo
+
+TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MatchInfo)
+{
+	TSharedPtr<FJsonObject> MapInfoJson = MakeShareable(new FJsonObject);
+
+	if (MatchInfo != NULL) {
+		MapInfoJson->SetStringField(TEXT("Title"), MatchInfo->Title);
+		MapInfoJson->SetStringField(TEXT("Author"), MatchInfo->Author);
+		MapInfoJson->SetStringField(TEXT("Title"), MatchInfo->Title);
+		MapInfoJson->SetStringField(TEXT("Description"), MatchInfo->Description);
+		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), MatchInfo->MapScreenshotReference);
+	}
+
+	return MapInfoJson;
+}
+
+TSharedPtr<FJsonObject> GetLobbyMatchInfoJSON(AUTLobbyMatchInfo* AvailableMatch, uint32 InstancePort)
 {
 	TSharedPtr<FJsonObject> MatchJson = MakeShareable(new FJsonObject);
 
+	// will be used to get full game info from http://<serverhost>:<InstancePort+100>/gameinfo url
+	MatchJson->SetNumberField(TEXT("InstancePort"), InstancePort); 
 	MatchJson->SetStringField(TEXT("CurrentState"), AvailableMatch->CurrentState.ToString());
 	MatchJson->SetNumberField(TEXT("bPrivateMatch"), AvailableMatch->bPrivateMatch);
 	MatchJson->SetNumberField(TEXT("bSpectatable"), AvailableMatch->bSpectatable);
 	MatchJson->SetNumberField(TEXT("bJoinAnytime"), AvailableMatch->bJoinAnytime);
 	MatchJson->SetNumberField(TEXT("bRankLocked"), AvailableMatch->bRankLocked);
+	MatchJson->SetNumberField(TEXT("GameInstanceID"), AvailableMatch->GameInstanceID);
+	MatchJson->SetStringField(TEXT("GameInstanceGUID"), AvailableMatch->GameInstanceGUID);
+	MatchJson->SetNumberField(TEXT("NumPlayersInMatch"), AvailableMatch->NumPlayersInMatch());
+	MatchJson->SetNumberField(TEXT("NumSpectatorsInMatch"), AvailableMatch->NumSpectatorsInMatch());
+	MatchJson->SetNumberField(TEXT("RankCheck"), AvailableMatch->RankCheck); // average rank
+	MatchJson->SetNumberField(TEXT("InstanceLaunchTime"), AvailableMatch->InstanceLaunchTime);
+	MatchJson->SetStringField(TEXT("CustomGameName"), AvailableMatch->CustomGameName);
+
+	TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(AvailableMatch->InitialMapInfo);
+	MatchJson->SetObjectField(TEXT("MapInfo"), MapInfoJson);
 
 	// Players Info
 	TArray<TSharedPtr<FJsonValue>> AvailablePlayersJson;
-	for (int32 PlayerIdx = 0; PlayerIdx < AvailableMatch->Players.Num(); PlayerIdx++)
+	for (int32 PlayerIdx = 0; PlayerIdx < AvailableMatch->PlayersInMatchInstance.Num(); PlayerIdx++)
 	{
-		TSharedPtr<FJsonObject> PlayerJson = GetPlayerInfoJSON(AvailableMatch->Players[PlayerIdx]);
+		TSharedPtr<FJsonObject> PlayerJson = GetRemotePlayerInfoJSON(&AvailableMatch->PlayersInMatchInstance[PlayerIdx]);
 		AvailablePlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
 	}
 
@@ -78,33 +123,6 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 
 	if (BaseGameMode) {
 
-		// GameMode
-		/*
-		JsonObject->SetBoolField(TEXT("IsMatchInProgress"), BaseGameMode->IsMatchInProgress());
-		JsonObject->SetBoolField(TEXT("HasMatchEnded"), BaseGameMode->HasMatchEnded());
-		JsonObject->SetNumberField(TEXT("NumTravellingPlayers"), BaseGameMode->NumTravellingPlayers);
-		JsonObject->SetStringField(TEXT("NetworkNumber"), BaseGameMode->GetNetworkNumber());
-		JsonObject->SetStringField(TEXT("MatchState"), BaseGameMode->GetMatchState().ToString());
-		
-		// UTBaseGameMode
-		JsonObject->SetStringField(TEXT("ServerInstanceID"), BaseGameMode->ServerInstanceID);
-		JsonObject->SetStringField(TEXT("ServerInstanceGUID"), BaseGameMode->ServerInstanceGUID.ToString()); // The Unique ID for this game instance.
-		JsonObject->SetStringField(TEXT("ContextGUID"), BaseGameMode->ContextGUID.ToString()); // ?
-		JsonObject->SetStringField(TEXT("ServerPassword"), BaseGameMode->ServerPassword);
-		JsonObject->SetStringField(TEXT("SpectatePassword"), BaseGameMode->SpectatePassword);
-		JsonObject->SetBoolField(TEXT("bRequirePassword"), BaseGameMode->bRequirePassword);
-		JsonObject->SetStringField(TEXT("DisplayName"), BaseGameMode->DisplayName.ToString());
-		JsonObject->SetNumberField(TEXT("MinAllowedRank"), BaseGameMode->MinAllowedRank);
-		JsonObject->SetNumberField(TEXT("MaxAllowedRank"), BaseGameMode->MaxAllowedRank);
-		JsonObject->SetBoolField(TEXT("bTrainingGround"), BaseGameMode->bTrainingGround);
-		JsonObject->SetNumberField(TEXT("NumPlayers"), BaseGameMode->GetNumPlayers());
-		JsonObject->SetNumberField(TEXT("NumMatches"), BaseGameMode->GetNumMatches()); // 1 if dedi server else [0, .., X] range for hubs/lobbies
-		JsonObject->SetNumberField(TEXT("CurrentPlaylistId"), BaseGameMode->CurrentPlaylistId); // no idea what this is about
-		JsonObject->SetBoolField(TEXT("bPrivateMatch"), BaseGameMode->bPrivateMatch);
-		JsonObject->SetStringField(TEXT("RankedLeagueName"), BaseGameMode->GetRankedLeagueName()); // always empty for the moment
-		JsonObject->SetBoolField(TEXT("SupportsInstantReplay"), BaseGameMode->SupportsInstantReplay());
-		JsonObject->SetBoolField(TEXT("bIsLANGame"), BaseGameMode->bIsLANGame);
-		*/
 		if (BaseGameMode->IsLobbyServer())
 		{
 			AUTLobbyGameMode* LobbyGameMode;
@@ -121,21 +139,20 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 
 				AUTLobbyGameState* UTLobbyGameState = LobbyGameMode->UTLobbyGameState;
 
-				TArray<TSharedPtr<FJsonValue>> AvailableMatchJson;
-				for (int32 i = 0; i < UTLobbyGameState->AvailableMatches.Num(); i++)
+				TArray<TSharedPtr<FJsonValue>> GameInstancesJson;
+				for (int32 i = 0; i < UTLobbyGameState->GameInstances.Num(); i++)
 				{
-					TSharedPtr<FJsonObject> MatchJson = GetMatchInfoJSON(UTLobbyGameState->AvailableMatches[i]);
-					AvailableMatchJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
+					TSharedPtr<FJsonObject> MatchJson = GetLobbyMatchInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, UTLobbyGameState->GameInstances[i].InstancePort);
+					GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 				}
 
-				LobbyInfoJson->SetArrayField(TEXT("AvailableMatches"), AvailableMatchJson);
+				LobbyInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
 
 
-				// JsonObject->SetArrayField(TEXT("Rulesets"),  RulesetJson);
 				JsonObject->SetObjectField(TEXT("LobbyInfo"), LobbyInfoJson);
 			}
 		}
-		// TODO
+		// Either dedicated server or lobby instanced servers
 		else {
 			JsonObject->SetStringField(TEXT("ServerType"), "Dedi");
 		}
