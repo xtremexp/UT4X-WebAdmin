@@ -5,6 +5,8 @@
 #define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
 #define UT4WA_WWW_FOLDER "www"
 
+#define IS_DEBUG 1
+
 #define PAGE1 "<html><head><title>File not found</title></head><body>File not found</body></html>"
 #define DENIED "<html><head><title>Acces denied</title></head><body>Access denied</body></html>"
 #define OPAQUE1 "11733b200778ce33060f31c9af70a870ba96ddd4"
@@ -147,7 +149,7 @@ int answer_to_connection(void *cls,
 	const char *upload_data,
 	size_t *upload_data_size, void **con_cls)
 {
-	int ret;
+	#ifndef IS_DEBUG
 	struct MHD_Response *response;
 	char *username;
 	const char *realm = "someusername";
@@ -194,6 +196,7 @@ int answer_to_connection(void *cls,
 	else {
 		//UE_LOG(UT4WebAdmin, Log, TEXT("User '%s' authenticated."), *usernameFStr);
 	}
+	#endif
 
 	// USER AUTHENTICATED LET'S GO !
 

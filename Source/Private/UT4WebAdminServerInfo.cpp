@@ -5,10 +5,8 @@
 TSharedPtr<FJsonObject> GetServerInfoJSON(AUTBaseGameMode* BaseGameMode)
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 
-	AUTGameState* BaseGameState;
-	BaseGameState = Cast<AUTGameState>(GWorld->GetGameState());
+	AUTGameState* BaseGameState = Cast<AUTGameState>(GWorld->GetGameState());
 
 	if (BaseGameState) {
 
