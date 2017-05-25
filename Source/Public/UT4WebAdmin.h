@@ -6,6 +6,8 @@
 #include "UTGameMode.h"
 #include "UTLobbyGameState.h"
 #include "UTLobbyGameMode.h"
+#include "UTLobbyMatchInfo.h"
+#include "UTLobbyPlayerState.h"
 
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
 

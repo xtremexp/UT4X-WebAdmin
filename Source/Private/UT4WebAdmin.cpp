@@ -35,7 +35,6 @@ void UUT4WebAdmin::Init()
 		HeadAdminPassword = FString("webadminpassword");
 	}
 
-
 	StartMicroHttp();
 }
 
@@ -62,9 +61,12 @@ TSharedPtr<FJsonObject> GetServerInfoJSON()
 	return JsonObject;
 }
 
+
+
+
 TSharedPtr<FJsonObject> GetGameInfoJSON()
 {
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);;
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
 	// Get a reference of any object using the UTBaseGameMode
 	AUTBaseGameMode* BaseGameMode;
@@ -73,6 +75,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 	if (BaseGameMode) {
 
 		// GameMode
+		/*
 		JsonObject->SetBoolField(TEXT("IsMatchInProgress"), BaseGameMode->IsMatchInProgress());
 		JsonObject->SetBoolField(TEXT("HasMatchEnded"), BaseGameMode->HasMatchEnded());
 		JsonObject->SetNumberField(TEXT("NumTravellingPlayers"), BaseGameMode->NumTravellingPlayers);
@@ -97,17 +100,105 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 		JsonObject->SetStringField(TEXT("RankedLeagueName"), BaseGameMode->GetRankedLeagueName()); // always empty for the moment
 		JsonObject->SetBoolField(TEXT("SupportsInstantReplay"), BaseGameMode->SupportsInstantReplay());
 		JsonObject->SetBoolField(TEXT("bIsLANGame"), BaseGameMode->bIsLANGame);
-
+		*/
 		if (BaseGameMode->IsLobbyServer())
 		{
 			AUTLobbyGameMode* LobbyGameMode;
 			LobbyGameMode = GWorld->GetAuthGameMode<AUTLobbyGameMode>();
+			JsonObject->SetStringField(TEXT("ServerType"), "Lobby");
 
 			if (LobbyGameMode)
 			{
-				JsonObject->SetStringField(TEXT("ServType"), TEXT("dedis"));
+				// LobbyPassword
+				TSharedPtr<FJsonObject> LobbyInfoJson = MakeShareable(new FJsonObject);
+				LobbyInfoJson->SetStringField(TEXT("LobbyPassword"), LobbyGameMode->LobbyPassword);
+				LobbyInfoJson->SetNumberField(TEXT("NumPlayers"), LobbyGameMode->GetNumPlayers());
+				LobbyInfoJson->SetNumberField(TEXT("NumMatches"), LobbyGameMode->GetNumMatches());
+
+				AUTLobbyGameState* UTLobbyGameState = LobbyGameMode->UTLobbyGameState;
+
+				TArray<TSharedPtr<FJsonValue>> AvailableMatchJson;
+				for (int32 i = 0; i < UTLobbyGameState->AvailableMatches.Num(); i++)
+				{
+					AUTLobbyMatchInfo* AvailableMatch = UTLobbyGameState->AvailableMatches[i];
+					TSharedPtr<FJsonObject> MatchJson = MakeShareable(new FJsonObject);
+
+					MatchJson->SetStringField(TEXT("CurrentState"), AvailableMatch->CurrentState.ToString());
+					MatchJson->SetNumberField(TEXT("bPrivateMatch"), AvailableMatch->bPrivateMatch);
+					MatchJson->SetNumberField(TEXT("bSpectatable"), AvailableMatch->bSpectatable);
+					MatchJson->SetNumberField(TEXT("bJoinAnytime"), AvailableMatch->bJoinAnytime);
+					MatchJson->SetNumberField(TEXT("bRankLocked"), AvailableMatch->bRankLocked);
+					
+					TArray<TSharedPtr<FJsonValue>> AvailablePlayersJson;
+					for (int32 PlayerIdx = 0; PlayerIdx < AvailableMatch->Players.Num(); PlayerIdx++)
+					{
+						//TWeakObkectPtr<AUTLobbyPlayerState> UTLobbyPlayerState = AvailableMatch->Players[PlayerIdx];
+
+						TSharedPtr<FJsonObject> PlayerJson = MakeShareable(new FJsonObject);
+						PlayerJson->SetStringField(TEXT("PlayerName"), AvailableMatch->Players[PlayerIdx]->PlayerName);
+						PlayerJson->SetNumberField(TEXT("Kills"), AvailableMatch->Players[PlayerIdx]->Kills);
+						PlayerJson->SetNumberField(TEXT("KillAssists"), AvailableMatch->Players[PlayerIdx]->KillAssists);
+						PlayerJson->SetNumberField(TEXT("DamageDone"), AvailableMatch->Players[PlayerIdx]->DamageDone);
+						PlayerJson->SetNumberField(TEXT("Deaths"), AvailableMatch->Players[PlayerIdx]->Deaths);
+						PlayerJson->SetNumberField(TEXT("FlagCaptures"), AvailableMatch->Players[PlayerIdx]->FlagCaptures);
+						PlayerJson->SetNumberField(TEXT("FlagReturns"), AvailableMatch->Players[PlayerIdx]->FlagReturns);
+						PlayerJson->SetNumberField(TEXT("Assists"), AvailableMatch->Players[PlayerIdx]->Assists);
+						PlayerJson->SetBoolField(TEXT("bIsRconAdmin"), AvailableMatch->Players[PlayerIdx]->bIsRconAdmin);
+						PlayerJson->SetNumberField(TEXT("PartySize"), AvailableMatch->Players[PlayerIdx]->PartySize);
+						PlayerJson->SetStringField(TEXT("PartyLeader"), AvailableMatch->Players[PlayerIdx]->PartyLeader);
+						PlayerJson->SetStringField(TEXT("ClanName"), AvailableMatch->Players[PlayerIdx]->ClanName);
+						PlayerJson->SetNumberField(TEXT("ElapsedTime"), AvailableMatch->Players[PlayerIdx]->ElapsedTime);
+						PlayerJson->SetNumberField(TEXT("XP"), AvailableMatch->Players[PlayerIdx]->GetPrevXP());
+						PlayerJson->SetStringField(TEXT("CountryFlag"), AvailableMatch->Players[PlayerIdx]->CountryFlag.ToString());
+						PlayerJson->SetStringField(TEXT("EpicAccountName"), AvailableMatch->Players[PlayerIdx]->EpicAccountName);
+						PlayerJson->SetStringField(TEXT("ClampedName"), AvailableMatch->Players[PlayerIdx]->ClampedName);
+						// RANKS
+						PlayerJson->SetNumberField(TEXT("DuelRank"), AvailableMatch->Players[PlayerIdx]->DuelRank);
+						PlayerJson->SetNumberField(TEXT("CTFRank"), AvailableMatch->Players[PlayerIdx]->CTFRank);
+						PlayerJson->SetNumberField(TEXT("TDMRank"), AvailableMatch->Players[PlayerIdx]->TDMRank);
+						PlayerJson->SetNumberField(TEXT("DMRank"), AvailableMatch->Players[PlayerIdx]->DMRank);
+						PlayerJson->SetNumberField(TEXT("ShowdownRank"), AvailableMatch->Players[PlayerIdx]->ShowdownRank);
+						PlayerJson->SetNumberField(TEXT("FlagRunRank"), AvailableMatch->Players[PlayerIdx]->FlagRunRank);
+						PlayerJson->SetNumberField(TEXT("RankedDuelRank"), AvailableMatch->Players[PlayerIdx]->RankedDuelRank);
+						PlayerJson->SetNumberField(TEXT("RankedCTFRank"), AvailableMatch->Players[PlayerIdx]->RankedCTFRank);
+						PlayerJson->SetNumberField(TEXT("RankedShowdownRank"), AvailableMatch->Players[PlayerIdx]->RankedShowdownRank);
+						PlayerJson->SetNumberField(TEXT("RankedFlagRunRank"), AvailableMatch->Players[PlayerIdx]->RankedFlagRunRank);
+
+						PlayerJson->SetNumberField(TEXT("KickCount"), AvailableMatch->Players[PlayerIdx]->KickCount);
+						PlayerJson->SetNumberField(TEXT("LastActiveTime"), AvailableMatch->Players[PlayerIdx]->LastActiveTime);
+						
+						PlayerJson->SetNumberField(TEXT("Ping"), AvailableMatch->Players[PlayerIdx]->Ping);
+						PlayerJson->SetStringField(TEXT("SavedNetworkAddress"), AvailableMatch->Players[PlayerIdx]->SavedNetworkAddress);
+						
+
+						
+						AvailablePlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
+					}
+					
+					// Players
+
+					MatchJson->SetArrayField(TEXT("AvailablePlayers"), AvailablePlayersJson);
+					
+					AvailableMatchJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
+				}
+
+				LobbyInfoJson->SetArrayField(TEXT("AvailableMatches"), AvailableMatchJson);
+
+
+				// JsonObject->SetArrayField(TEXT("Rulesets"),  RulesetJson);
+				JsonObject->SetObjectField(TEXT("LobbyInfo"), LobbyInfoJson);
+				
+				
+
+				// UTLobbyGameState
+
+				//FString LobbyPassword;
 				// TODO get instance data
 			}
+		}
+		// TODO
+		else {
+			JsonObject->SetStringField(TEXT("ServerType"), "Dedi");
 		}
 	}
 
@@ -317,8 +408,17 @@ int answer_to_connection(void *cls,
 
 void UUT4WebAdmin::StartMicroHttp()
 {
+	AUTBaseGameMode* BaseGameMode;
+	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+	bool IsGameInstanceServer = false;
+
+	// TODO if isGameInstance start http server on another port than default
+	if (BaseGameMode) {
+		IsGameInstanceServer = BaseGameMode->IsGameInstanceServer();
+	}
+
 	// SSL not working yet need some more investigation
-	if (WebHttpsEnabled) {
+	if (WebHttpsEnabled && !IsGameInstanceServer) {
 
 		if (NULL == *WebServerCertificateFile || NULL == *WebServerKeyFile) {
 			UE_LOG(UT4WebAdmin, Warning, TEXT("Server key or certificate file is not set."));
