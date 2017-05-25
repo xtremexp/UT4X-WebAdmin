@@ -188,11 +188,11 @@ int answer_to_connection(void *cls,
 			(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
 		MHD_destroy_response(response);
 
-		UE_LOG(UT4WebAdmin, Warning, TEXT("User '%s' failed to authenticate."), *usernameFStr);
+		//UE_LOG(UT4WebAdmin, Warning, TEXT("User '%s' failed to authenticate."), *usernameFStr);
 		return ret;
 	}
 	else {
-		UE_LOG(UT4WebAdmin, Log, TEXT("User '%s' authenticated."), *usernameFStr);
+		//UE_LOG(UT4WebAdmin, Log, TEXT("User '%s' authenticated."), *usernameFStr);
 	}
 
 	// USER AUTHENTICATED LET'S GO !
@@ -318,13 +318,15 @@ void UUT4WebAdminHttpServer::Stop()
 }
 bool started = false;
 
-
+// Start HTTPs server when GWorld available
 void UUT4WebAdminHttpServer::Tick(float DeltaTime)
 {
-	// TODO
 	if (!started && GWorld != NULL && NULL == daemon) {
 		started = true;
 		Start();
+	}
+	else {
+		// TODO poll
 	}
 }
 
