@@ -2,9 +2,33 @@
 #include "UT4WebAdminGameInfo.h"
 
 
+TSharedPtr<FJsonObject> GetMatchInfoJSON(AUTLobbyMatchInfo* AvailableMatch)
+{
+	TSharedPtr<FJsonObject> MatchJson = MakeShareable(new FJsonObject);
+
+	MatchJson->SetStringField(TEXT("CurrentState"), AvailableMatch->CurrentState.ToString());
+	MatchJson->SetNumberField(TEXT("bPrivateMatch"), AvailableMatch->bPrivateMatch);
+	MatchJson->SetNumberField(TEXT("bSpectatable"), AvailableMatch->bSpectatable);
+	MatchJson->SetNumberField(TEXT("bJoinAnytime"), AvailableMatch->bJoinAnytime);
+	MatchJson->SetNumberField(TEXT("bRankLocked"), AvailableMatch->bRankLocked);
+
+	// Players Info
+	TArray<TSharedPtr<FJsonValue>> AvailablePlayersJson;
+	for (int32 PlayerIdx = 0; PlayerIdx < AvailableMatch->Players.Num(); PlayerIdx++)
+	{
+		TSharedPtr<FJsonObject> PlayerJson = GetPlayerInfoJSON(AvailableMatch->Players[PlayerIdx]);
+		AvailablePlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
+	}
+
+	MatchJson->SetArrayField(TEXT("AvailablePlayers"), AvailablePlayersJson);
+
+	return MatchJson;
+}
+
 TSharedPtr<FJsonObject> GetPlayerInfoJSON(TWeakObjectPtr<AUTLobbyPlayerState> PlayerState)
 {
 	TSharedPtr<FJsonObject> PlayerJson = MakeShareable(new FJsonObject);
+
 	PlayerJson->SetStringField(TEXT("PlayerName"), PlayerState->PlayerName);
 	PlayerJson->SetNumberField(TEXT("Kills"), PlayerState->Kills);
 	PlayerJson->SetNumberField(TEXT("KillAssists"), PlayerState->KillAssists);
@@ -22,6 +46,7 @@ TSharedPtr<FJsonObject> GetPlayerInfoJSON(TWeakObjectPtr<AUTLobbyPlayerState> Pl
 	PlayerJson->SetStringField(TEXT("CountryFlag"), PlayerState->CountryFlag.ToString());
 	PlayerJson->SetStringField(TEXT("EpicAccountName"), PlayerState->EpicAccountName);
 	PlayerJson->SetStringField(TEXT("ClampedName"), PlayerState->ClampedName);
+
 	// RANKS
 	PlayerJson->SetNumberField(TEXT("DuelRank"), PlayerState->DuelRank);
 	PlayerJson->SetNumberField(TEXT("CTFRank"), PlayerState->CTFRank);
@@ -99,24 +124,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 				TArray<TSharedPtr<FJsonValue>> AvailableMatchJson;
 				for (int32 i = 0; i < UTLobbyGameState->AvailableMatches.Num(); i++)
 				{
-					AUTLobbyMatchInfo* AvailableMatch = UTLobbyGameState->AvailableMatches[i];
-					TSharedPtr<FJsonObject> MatchJson = MakeShareable(new FJsonObject);
-
-					MatchJson->SetStringField(TEXT("CurrentState"), AvailableMatch->CurrentState.ToString());
-					MatchJson->SetNumberField(TEXT("bPrivateMatch"), AvailableMatch->bPrivateMatch);
-					MatchJson->SetNumberField(TEXT("bSpectatable"), AvailableMatch->bSpectatable);
-					MatchJson->SetNumberField(TEXT("bJoinAnytime"), AvailableMatch->bJoinAnytime);
-					MatchJson->SetNumberField(TEXT("bRankLocked"), AvailableMatch->bRankLocked);
-					
-					TArray<TSharedPtr<FJsonValue>> AvailablePlayersJson;
-					for (int32 PlayerIdx = 0; PlayerIdx < AvailableMatch->Players.Num(); PlayerIdx++)
-					{
-						TSharedPtr<FJsonObject> PlayerJson = GetPlayerInfoJSON(AvailableMatch->Players[PlayerIdx]);
-						AvailablePlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
-					}
-					
-					// Players
-					MatchJson->SetArrayField(TEXT("AvailablePlayers"), AvailablePlayersJson);
+					TSharedPtr<FJsonObject> MatchJson = GetMatchInfoJSON(UTLobbyGameState->AvailableMatches[i]);
 					AvailableMatchJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 				}
 
