@@ -9,7 +9,7 @@ UUT4WebAdmin::UUT4WebAdmin(const FObjectInitializer& ObjectInitializer)
 }
 
 
-void UUT4WebAdmin::Init()
+void UUT4WebAdmin::Start()
 {
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
@@ -17,22 +17,22 @@ void UUT4WebAdmin::Init()
 	_HttpServer = NewObject<UUT4WebAdminHttpServer>();
 	
 	if (_HttpServer) {
-		_HttpServer.Start();
+		_HttpServer->Start();
 	}
 }
 
 
 void UUT4WebAdmin::Stop()
 {
-	if (NULL != _HttpServer) {
-		_HttpServer.Stop();
+	if (_HttpServer) {
+		_HttpServer->Stop();
 	}
 }
 
 void UUT4WebAdmin::Tick(float DeltaTime)
 {
-	if (NULL != _HttpServer) {
-		_HttpServer.Tick();
+	if (_HttpServer) {
+		_HttpServer->Tick(DeltaTime);
 	}
 }
 

@@ -6,7 +6,6 @@
 #include "UTGameMode.h"
 #include "UT4WebAdminHttpServer.h"
 
-
 #include "UT4WebAdmin.generated.h"
 
 // Log messages
@@ -19,7 +18,7 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 
 	GENERATED_UCLASS_BODY()
 
-	void Init();
+	void Start();
 	void Stop();
 
 	virtual void Tick(float DeltaTime) override;
@@ -42,7 +41,6 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 	UPROPERTY(Config)
 		FString HeadAdminPassword;
 
-	// Note: disabled some properties until civetweb can use them properly!
 	/* Http port of webserver */
 	UPROPERTY(Config)
 		uint32 WebHttpPort;

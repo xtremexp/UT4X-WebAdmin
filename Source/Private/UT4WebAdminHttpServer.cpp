@@ -1,5 +1,4 @@
 #include "UT4WebAdmin.h"
-#include "UT4WebAdminHttpServer.h"
 #include "UT4WebAdminGameInfo.h"
 #include "UT4WebAdminServerInfo.h"
 
@@ -291,6 +290,12 @@ void UUT4WebAdminHttpServer::Start()
 	}
 }
 
+void UUT4WebAdminHttpServer::Stop()
+{
+	if (NULL != daemon) {
+		MHD_stop_daemon(daemon);
+	}
+}
 
 void UUT4WebAdminHttpServer::Tick(float DeltaTime)
 {

@@ -19,7 +19,7 @@ IMPLEMENT_MODULE(FUT4WebAdminPlugin, UT4WebAdmin)
 void FUT4WebAdminPlugin::StartupModule()
 {
 	_WebAdmin = NewObject<UUT4WebAdmin>();
-	_WebAdmin->Init();
+	_WebAdmin->Start();
 }
 
 
