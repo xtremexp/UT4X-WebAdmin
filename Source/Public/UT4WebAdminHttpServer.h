@@ -3,7 +3,8 @@
 //#include "UT4WebAdmin.h"
 #include "Core.h"
 #include "UnrealTournament.h"
-
+#include "UTBaseGameMode.h"
+#include "UTLobbyGameMode.h"
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
 
 #include "UT4WebAdminHttpServer.generated.h"
@@ -14,6 +15,8 @@ class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
 	GENERATED_UCLASS_BODY()
 
 	void Start();
+	void StartWithTLS(uint32 httpPort);
+	void StartWithoutTLS(uint32 httpPort);
 	void Stop();
 
 	virtual void Tick(float DeltaTime) override;

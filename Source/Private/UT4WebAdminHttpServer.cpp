@@ -12,8 +12,6 @@
 UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-
 	// don't garbace collect me
 	SetFlags(RF_MarkAsRootSet);
 }
@@ -215,77 +213,102 @@ int answer_to_connection(void *cls,
 	}
 }
 
+
+void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
+{
+	if (NULL == *WebServerCertificateFile || NULL == *WebServerKeyFile) {
+		UE_LOG(UT4WebAdmin, Warning, TEXT("Server key or certificate file is not set."));
+		return;
+	}
+
+	// openssl req -days 365 -out server.pem -new -x509 -key server.key
+	FILE* fcert_file = fopen(TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
+
+	// openssl genrsa -out server.key 1024
+	FILE* fkey_file = fopen(TCHAR_TO_ANSI(*WebServerKeyFile), "r");
+
+	if (NULL != fcert_file && NULL != fkey_file) {
+
+		fseek(fcert_file, 0, SEEK_END);
+		size_t size = ftell(fcert_file);
+		char* cert_pem = new char[size];
+		rewind(fcert_file);
+		fread(cert_pem, sizeof(char), size, fcert_file);
+
+
+		fseek(fkey_file, 0, SEEK_END);
+		size_t size2 = ftell(fkey_file);
+		char* key_pem = new char[size2];
+		rewind(fkey_file);
+		fread(key_pem, sizeof(char), size2, fkey_file);
+
+		daemon = MHD_start_daemon(MHD_USE_AUTO | MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_DEBUG, httpPort, NULL, NULL,
+			&answer_to_connection, NULL,
+			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
+			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
+			MHD_OPTION_END);
+	}
+
+
+	if (NULL != fcert_file) {
+		fclose(fcert_file);
+	}
+
+	if (NULL != fkey_file) {
+		fclose(fkey_file);
+	}
+}
+
+
+void UUT4WebAdminHttpServer::StartWithoutTLS(uint32 httpPort)
+{
+	daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG, httpPort, NULL, NULL,
+		&answer_to_connection, NULL, MHD_OPTION_END);
+}
+
 void UUT4WebAdminHttpServer::Start()
 {
-	//AUTBaseGameMode* BaseGameMode;
-	//BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+	// should not occurs at this stage but who knows ...
+	if (GWorld == NULL) {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" Impossible to start UT4WebAdmin - GWorld is NULL."));
+		return;
+	}
+
+	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+
 	bool IsGameInstanceServer = false;
 
-	// TODO if isGameInstance start http server on another port than default
-	if (BaseGameMode) {
-		IsGameInstanceServer = BaseGameMode->IsGameInstanceServer();
+	int httpPort = WebHttpPort;
+
+	if (httpPort == 0) {
+		httpPort = 8080;
+	}
+
+	// TODO get lobby instance port and add 100
+	// FIX me
+	if (IsGameInstanceServer) {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" Impossible to start UT4WebAdmin for lobby instances."));
+		httpPort = 8100;
+		return;
 	}
 
 	// SSL not working yet need some more investigation
 	if (WebHttpsEnabled && !IsGameInstanceServer) {
-
-		if (NULL == *WebServerCertificateFile || NULL == *WebServerKeyFile) {
-			UE_LOG(UT4WebAdmin, Warning, TEXT("Server key or certificate file is not set."));
-			return;
-		}
-
-		// openssl req -days 365 -out server.pem -new -x509 -key server.key
-		FILE* fcert_file = fopen(TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
-
-		// openssl genrsa -out server.key 1024
-		FILE* fkey_file = fopen(TCHAR_TO_ANSI(*WebServerKeyFile), "r");
-
-		if (NULL != fcert_file && NULL != fkey_file) {
-
-			fseek(fcert_file, 0, SEEK_END);
-			size_t size = ftell(fcert_file);
-			char* cert_pem = new char[size];
-			rewind(fcert_file);
-			fread(cert_pem, sizeof(char), size, fcert_file);
-
-
-			fseek(fkey_file, 0, SEEK_END);
-			size_t size2 = ftell(fkey_file);
-			char* key_pem = new char[size2];
-			rewind(fkey_file);
-			fread(key_pem, sizeof(char), size2, fkey_file);
-
-			daemon = MHD_start_daemon(MHD_USE_AUTO | MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_DEBUG, WebHttpPort, NULL, NULL,
-				&answer_to_connection, NULL,
-				MHD_OPTION_HTTPS_MEM_KEY, key_pem,
-				MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-				MHD_OPTION_END);
-		}
-		
-
-		if (NULL != fcert_file) {
-			fclose(fcert_file);
-		}
-
-		if (NULL != fkey_file) {
-			fclose(fkey_file);
-		}
+		StartWithTLS(httpPort);
 	}
 	else {
-		UE_LOG(UT4WebAdmin, Log, TEXT("Starting HTTP server without SSL"));
-		daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG, WebHttpPort, NULL, NULL,
-			&answer_to_connection, NULL, MHD_OPTION_END);
+		StartWithoutTLS(httpPort);
 	}
 	
 
 	if (daemon == NULL) {
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" UT4WebAdmin failed to start http(s) server !"));
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" UT4WebAdmin failed to start http(s) server at port: %i "), httpPort);
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
 	}
 	else {
 		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
-		UE_LOG(UT4WebAdmin, Log, TEXT(" UT4WebAdmin started at port: %i "), WebHttpPort);
+		UE_LOG(UT4WebAdmin, Log, TEXT(" UT4WebAdmin started at port: %i "), httpPort);
 		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
 	}
 }

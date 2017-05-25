@@ -41,21 +41,6 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 	UPROPERTY(Config)
 		FString HeadAdminPassword;
 
-	/* Http port of webserver */
-	UPROPERTY(Config)
-		uint32 WebHttpPort;
-
-	/* If 'true' then http server is enabled else disabled */
-	UPROPERTY(Config)
-		bool WebHttpsEnabled;
-
-	/* Path to .pem server certificate file */
-	UPROPERTY(Config)
-		FString WebServerCertificateFile;
-
-	/* Path to .key server key file */
-	UPROPERTY(Config)
-		FString WebServerKeyFile;
 
 	UUT4WebAdminHttpServer* _HttpServer;
 private:
