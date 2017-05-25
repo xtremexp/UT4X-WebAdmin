@@ -1,0 +1,10 @@
+#pragma once
+
+#include "UT4WebAdmin.h"
+#include "Core.h"
+#include "UnrealTournament.h"
+#include "UTGameMode.h"
+#include "UTLobbyGameState.h"
+#include "UTLobbyGameMode.h"
+#include "UTLobbyMatchInfo.h"
+#include "UTLobbyPlayerState.h"
