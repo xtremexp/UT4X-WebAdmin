@@ -1,25 +1,19 @@
 #pragma once
 
-#include <iostream>
+//#include "UT4WebAdmin.h"
 #include "Core.h"
 #include "UnrealTournament.h"
-#include "UTGameMode.h"
-#include "UT4WebAdminHttpServer.h"
 
+#include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
 
-#include "UT4WebAdmin.generated.h"
-
-// Log messages
-DEFINE_LOG_CATEGORY_STATIC(UT4WebAdmin, Log, All);
-
+#include "UT4WebAdminHttpServer.generated.h"
 
 UCLASS(Config=UT4WebAdmin)
-class UUT4WebAdmin : public UObject, public FTickableGameObject
+class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
 {
-
 	GENERATED_UCLASS_BODY()
 
-	void Init();
+	void Start();
 	void Stop();
 
 	virtual void Tick(float DeltaTime) override;
@@ -33,33 +27,34 @@ class UUT4WebAdmin : public UObject, public FTickableGameObject
 		return true;
 	}
 
-
 	// Main administrator username
 	UPROPERTY(Config)
-		FString HeadAdminUsername;
+	FString HeadAdminUsername;
 
 	// Main administrator password
 	UPROPERTY(Config)
-		FString HeadAdminPassword;
+	FString HeadAdminPassword;
 
 	// Note: disabled some properties until civetweb can use them properly!
 	/* Http port of webserver */
 	UPROPERTY(Config)
-		uint32 WebHttpPort;
+	uint32 WebHttpPort;
 
 	/* If 'true' then http server is enabled else disabled */
 	UPROPERTY(Config)
-		bool WebHttpsEnabled;
+	bool WebHttpsEnabled;
 
 	/* Path to .pem server certificate file */
 	UPROPERTY(Config)
-		FString WebServerCertificateFile;
+	FString WebServerCertificateFile;
 
 	/* Path to .key server key file */
 	UPROPERTY(Config)
-		FString WebServerKeyFile;
+	FString WebServerKeyFile;
 
-	UUT4WebAdminHttpServer* _HttpServer;
+	//int answer_to_connection(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls);
+
 private:
-	AUTGameMode* GameMode;
+	struct MHD_Daemon *daemon;
+	AUTBaseGameMode* BaseGameMode;
 };
