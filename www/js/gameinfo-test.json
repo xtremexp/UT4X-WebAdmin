@@ -20,12 +20,91 @@
 				"RankCheck": 22,
 				"InstanceLaunchTime": 3173.84521484375,
 				"CustomGameName": "WinterIsComing's Game",
+				"Ruleset":
+				{
+					"Title": "Capture the Flag",
+					"Description": "Capture the Flag, with guns.\n\n<UT.Hub.RulesText_Small>TimeLimit : 20 minutes with halftime</>\n<UT.Hub.RulesText_Small>Mercy Rule : On</>\n<UT.Hub.RulesText_Small>Maximum players : 10</>",
+					"MaxPlayers": 10,
+					"MapList": [
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/CTF-TitanPass",
+							"MapAssetName": "CTF-TitanPass",
+							"Title": "Titan Pass",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/CTF-Face",
+							"MapAssetName": "CTF-Face",
+							"Title": "Facing Worlds",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/EpicInternal/Pistola/CTF-Pistola",
+							"MapAssetName": "CTF-Pistola",
+							"Title": "Pistola Battle Grounds",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/EpicInternal/Polaris/CTF-Polaris",
+							"MapAssetName": "CTF-Polaris",
+							"Title": "CTF-Polaris",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/CTF-Blank",
+							"MapAssetName": "CTF-Blank",
+							"Title": "CTF-Blank",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/CTF-Quick",
+							"MapAssetName": "CTF-Quick",
+							"Title": "CTF-Quick",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/CTF-Plaza",
+							"MapAssetName": "CTF-Plaza",
+							"Title": "CTF-Plaza",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/CTF-Bigrock",
+							"MapAssetName": "CTF-Bigrock",
+							"Title": "Bigrock Asteroid Mining",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/CTF-Volcano",
+							"MapAssetName": "CTF-Volcano",
+							"Title": "CTF-Volcano",
+							"PackageURL": ""
+						}
+					]
+				},
+				"MatchUpdate":
+				{
+					"TimeLimit": 600,
+					"GoalScore": 0,
+					"GameTime": 350,
+					"bMatchHasBegun": true,
+					"bMatchHasEnded": false,
+					"MatchState": "InProgress",
+					"TeamScores": [
+						{
+							"0": 0
+						},
+						{
+							"1": 1
+						}
+					]
+				},
 				"MapInfo":
 				{
-					"Title": "FR-Fort",
-					"Author": "Stuart Fitzsimmons",
-					"Description": "Holden demands his flag back!",
-					"MapScreenshotReference": "/Game/RestrictedAssets/Maps/LevelShots/shot_fort.shot_fort"
+					"Title": "Bigrock Asteroid Mining",
+					"Author": "Sidney \"Clawfist\" Rauchberger",
+					"Description": "The lunar Big Rock Mining Facility specializes in processing of heavy metal ores, and the slightly-lower-than-Earth gravity is ideal for the handling of large orders and high volume, but does physically wear on the human body over time; to compensate, zones of normal Earth gravity have been established in the facility?s interior spaces.",
+					"MapScreenshotReference": "/Game/RestrictedAssets/Maps/LevelShots/level_bigrock.level_bigrock"
 				},
 				"AvailablePlayers": [
 					{
@@ -77,6 +156,164 @@
 						"XPLevel": 58421,
 						"TeamNum": 0,
 						"Avatar": "UT.Avatar.1"
+					}
+				]
+			},
+			{
+				"InstancePort": 8100,
+				"CurrentState": "InProgress",
+				"bPrivateMatch": 1,
+				"bSpectatable": 0,
+				"bJoinAnytime": 1,
+				"bRankLocked": 0,
+				"GameInstanceID": 2,
+				"GameInstanceGUID": "7DE06BC54225F845114787B212851656",
+				"NumPlayersInMatch": 1,
+				"NumSpectatorsInMatch": 0,
+				"RankCheck": 28,
+				"InstanceLaunchTime": 498.89328002929688,
+				"CustomGameName": "??????'s Game",
+				"Ruleset":
+				{
+					"Title": "Deathmatch",
+					"Description": "Standard free-for-all deathmatch.\n\n<UT.Hub.RulesText_Small>TimeLimit : 10 minutes</>\n<UT.Hub.RulesText_Small>Maximum players : 6</>",
+					"MaxPlayers": 6,
+					"MapList": [
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/DM-Outpost23",
+							"MapAssetName": "DM-Outpost23",
+							"Title": "Outpost 23",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/DM-Chill",
+							"MapAssetName": "DM-Chill",
+							"Title": "Chill",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/DM-Underland",
+							"MapAssetName": "DM-Underland",
+							"Title": "Underland",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/EpicInternal/Lea/DM-Lea",
+							"MapAssetName": "DM-Lea",
+							"Title": "Lea Observatory",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/EpicInternal/Unsaved/DM-Unsaved",
+							"MapAssetName": "DM-Unsaved",
+							"Title": "Unsaved",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/EpicInternal/Backspace/DM-Backspace",
+							"MapAssetName": "DM-Backspace",
+							"Title": "Backspace",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/EpicInternal/Batrankus/DM-Batrankus",
+							"MapAssetName": "DM-Batrankus",
+							"Title": "Batrankus Bastion",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-Sand",
+							"MapAssetName": "DM-Sand",
+							"Title": "DM-Sand",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/DM-BioTower",
+							"MapAssetName": "DM-BioTower",
+							"Title": "The Bio Tower",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-Spacer",
+							"MapAssetName": "DM-Spacer",
+							"Title": "DM-Spacer",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-Cannon",
+							"MapAssetName": "DM-Cannon",
+							"Title": "DM-Cannon",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-Deadfall",
+							"MapAssetName": "DM-Deadfall",
+							"Title": "DM-Deadfall",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-Focus",
+							"MapAssetName": "DM-Focus",
+							"Title": "DM-Focus",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-NickTest1",
+							"MapAssetName": "DM-NickTest1",
+							"Title": "DM-NickTest1",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-Solo",
+							"MapAssetName": "DM-Solo",
+							"Title": "DM-Solo",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-DeckTest",
+							"MapAssetName": "DM-DeckTest",
+							"Title": "DM-DeckTest",
+							"PackageURL": ""
+						},
+						{
+							"MapPackageName": "/Game/RestrictedAssets/Maps/WIP/DM-ASDF",
+							"MapAssetName": "DM-ASDF",
+							"Title": "DM-ASDF",
+							"PackageURL": ""
+						}
+					]
+				},
+				"MatchUpdate":
+				{
+					"TimeLimit": 600,
+					"GoalScore": 30,
+					"GameTime": 102,
+					"bMatchHasBegun": false,
+					"bMatchHasEnded": false,
+					"MatchState": "WaitingToStart",
+					"TeamScores": []
+				},
+				"MapInfo":
+				{
+					"Title": "Batrankus Bastion",
+					"Author": "?scar Crego",
+					"MapPackageName": "/Game/EpicInternal/Batrankus/DM-Batrankus",
+					"MapAssetName": "DM-Batrankus",
+					"Description": "The main hub of an ancient water distribution system is now completely adapted for the Tournament. Happy Fragging!",
+					"MapScreenshotReference": "/Game/EpicInternal/Batrankus/BatrankusMeshScreenshot.BatrankusMeshScreenshot",
+					"RedirectPackageName": "",
+					"RedirectPackageURL": ""
+				},
+				"AvailablePlayers": [
+					{
+						"PlayerID": "adc60878d18e4c48b3ff1446f0bb5345",
+						"bIsSpectator": false,
+						"PlayerName": "LaraCroft",
+						"PlayerScore": 0,
+						"RankCheck": 28,
+						"XPLevel": 45176,
+						"TeamNum": 255,
+						"Avatar": "UT.Avatar.0"
 					}
 				]
 			}
