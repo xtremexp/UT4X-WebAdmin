@@ -2,7 +2,7 @@ var ut4waApp = angular.module('ut4waApp', [])
   .controller('GameInfoController', function($scope, $http) {
 
 	var url = "/gameinfo";
-	url = "/js/gameinfo-test.json";
+	//url = "/js/gameinfo-test.json";
 	
 	$scope.toMinutesSec = function(seconds){
 		return new Date(seconds * 1000).toISOString().substr(14, 5);
