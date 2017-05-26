@@ -6,6 +6,8 @@
 #include "UTBaseGameMode.h"
 #include "UTLobbyGameMode.h"
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
+#include <io.h>
+#include <fcntl.h>
 
 #include "UT4WebAdminHttpServer.generated.h"
 

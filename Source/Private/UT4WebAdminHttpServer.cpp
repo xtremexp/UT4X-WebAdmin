@@ -117,15 +117,12 @@ int handle_serve_file(void *cls,
 	f = fopen(concatString, "rb");
 
 	if (f != NULL) {
+		int fd = open(concatString, O_RDONLY);
+
 		// Determine file size
 		fseek(f, 0, SEEK_END);
 		size_t size = ftell(f);
-		char* where = new char[size];
-		rewind(f);
-		fread(where, sizeof(char), size, f);
-
-		response = MHD_create_response_from_buffer(strlen(where),
-			(void*)where, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_fd(size, fd);
 
 		fclose(f);
 		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
