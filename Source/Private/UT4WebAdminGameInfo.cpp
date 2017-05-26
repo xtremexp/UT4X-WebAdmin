@@ -228,7 +228,6 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
-	// Get a reference of any object using the UTBaseGameMode
 	AUTBaseGameMode* BaseGameMode;
 	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 
@@ -250,10 +249,13 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 				AUTLobbyGameState* UTLobbyGameState = LobbyGameMode->UTLobbyGameState;
 
 				TArray<TSharedPtr<FJsonValue>> GameInstancesJson;
-				for (int32 i = 0; i < UTLobbyGameState->GameInstances.Num(); i++)
-				{
-					TSharedPtr<FJsonObject> MatchJson = GetLobbyMatchInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, UTLobbyGameState->GameInstances[i].InstancePort);
-					GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
+
+				if (UTLobbyGameState) {
+					for (int32 i = 0; i < UTLobbyGameState->GameInstances.Num(); i++)
+					{
+						TSharedPtr<FJsonObject> MatchJson = GetLobbyMatchInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, UTLobbyGameState->GameInstances[i].InstancePort);
+						GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
+					}
 				}
 
 				LobbyInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
