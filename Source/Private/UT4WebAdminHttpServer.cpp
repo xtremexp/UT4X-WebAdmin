@@ -284,9 +284,14 @@ void UUT4WebAdminHttpServer::Start()
 		httpPort = 8080;
 	}
 
-	// TODO get lobby instance port and add 100
+	// for lobby instance server open http port at (instance port + 100)
 	if (IsGameInstanceServer) {
-		httpPort = 8100;
+		FString addressUrl = GWorld->GetAddressURL();
+
+		TArray<FString> PathItemList;
+		addressUrl.ParseIntoArray(PathItemList, TEXT(":"), /*InCullEmpty=*/true);
+
+		httpPort = FCString::Atoi(*PathItemList[PathItemList.Num() - 1]) + 100;
 	}
 
 	// SSL not working yet need some more investigation
