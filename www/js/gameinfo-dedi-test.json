@@ -1,0 +1,14 @@
+{
+	"IsLobbyServer": false,
+	"ServerInfo":
+	{
+		"IsPassworded": true,
+		"NumPlayers": 1,
+		"NumMatches": 1,
+		"GameInstances": [
+			{
+				"DataOrigin": "dedi"
+			}
+		]
+	}
+}

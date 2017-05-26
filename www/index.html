@@ -38,7 +38,9 @@
 					</div>
 					<div ng-if="hasMatches">
 						<div ng-repeat="gameInstance in ServerInfo.GameInstances">
-							<div class="panel panel-primary">
+							<!-- Game info from parent lobby server -->
+							<!-- Less info and less reliable data since it's partial data and replicated from instanced server to lobby -->
+							<div ng-if="gameInstance.DataOrigin == 'lobby'" class="panel panel-primary">
 							  <div class="panel-heading">
 								<h3 class="panel-title">{{gameInstance.CustomGameName}} - {{gameInstance.Ruleset.Title}} - {{gameInstance.MatchUpdate.MatchState}} - {{gameInstance.NumPlayersInMatch}} / {{gameInstance.Ruleset.MaxPlayers}} player(s)</h3>
 							  </div>
@@ -93,6 +95,11 @@
 									</table>
 								</div>
 							  </div>
+							</div>
+							<!-- Game info directly from hosting server, reliable and more info  -->
+							<!-- data structure is different so need to set another template -->
+							<div ng-if="gameInstance.DataOrigin == 'dedi'" class="panel panel-primary">
+								This is a dedicated server !
 							</div>
 						</div>
 					</div>

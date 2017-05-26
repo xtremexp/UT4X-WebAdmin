@@ -254,6 +254,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 					for (int32 i = 0; i < UTLobbyGameState->GameInstances.Num(); i++)
 					{
 						TSharedPtr<FJsonObject> MatchJson = GetLobbyMatchInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, UTLobbyGameState->GameInstances[i].InstancePort);
+						MatchJson->SetStringField("DataOrigin", "lobby");
 						GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 					}
 				}
@@ -278,6 +279,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 
 				TArray<TSharedPtr<FJsonValue>> GameInstancesJson;
 				TSharedPtr<FJsonObject> MatchJson = GetDediMatchInfoJSON(UTGameMode);
+				MatchJson->SetStringField("DataOrigin", "dedi");
 				GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 
 				DediInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
