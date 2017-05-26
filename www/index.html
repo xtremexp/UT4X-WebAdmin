@@ -9,6 +9,7 @@
 		<script src="js/angular164.min.js"></script>
 		<script src="js/ng-module.js"></script>
 		
+		<!-- BOOTSTRAP 3 -->
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
@@ -36,7 +37,7 @@
 					NO MATCHS!
 					</div>
 					<div ng-if="hasMatches">
-						<div ng-repeat="gameInstance in lobbyInfo.GameInstances">
+						<div ng-repeat="gameInstance in ServerInfo.GameInstances">
 							<div class="panel panel-primary">
 							  <div class="panel-heading">
 								<h3 class="panel-title">{{gameInstance.CustomGameName}} - {{gameInstance.Ruleset.Title}} - {{gameInstance.MatchUpdate.MatchState}} - {{gameInstance.NumPlayersInMatch}} / {{gameInstance.Ruleset.MaxPlayers}} player(s)</h3>

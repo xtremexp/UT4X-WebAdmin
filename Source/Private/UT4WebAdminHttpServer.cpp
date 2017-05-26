@@ -38,6 +38,13 @@ int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> j
 		(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
 	MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, "application/json");
 
+	// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
+	AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+	if (BaseGameMode->IsGameInstanceServer()) {
+		// TODO set real hostname and port
+		MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
+	}
+
 	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 	MHD_destroy_response(response);
 
