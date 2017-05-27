@@ -90,7 +90,7 @@ var ut4waApp = angular.module('ut4waApp', [])
 		
 		// lobby does not get full data from instanced servers
 		if($scope.IsLobbyServer){
-			$scope.GameInstancesLightData = response.data.ServerInfo.GameInstances;
+			//$scope.GameInstancesLightData = response.data.ServerInfo.GameInstances;
 			// TODO load extra data directly from instanced server rather than lobby
 		} 
 		// dedicated server or server instanced from parent lobby server 
