@@ -51,7 +51,8 @@ TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapI
 		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), MapInfo->MapScreenshotReference);
 		MapInfoJson->SetStringField(TEXT("RedirectPackageName"), MapInfo->Redirect.PackageName);
 		MapInfoJson->SetStringField(TEXT("RedirectPackageURL"), MapInfo->Redirect.PackageURL);
-		
+		MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), MapInfo->OptimalPlayerCount);
+		MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), MapInfo->OptimalTeamPlayerCount);
 	}
 
 	return MapInfoJson;
@@ -76,6 +77,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		InstanceInfoJson->SetNumberField(TEXT("NumSpectators"), LobbyMatchInfo->NumSpectatorsInMatch());
 		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), 0);
 
+		InstanceInfoJson->SetStringField(TEXT("ServerInstanceGUID"), LobbyMatchInfo->GameInstanceGUID);
 		InstanceInfoJson->SetStringField(TEXT("ServerName"), LobbyMatchInfo->CustomGameName);
 		InstanceInfoJson->SetStringField(TEXT("ServerMOTD"), "");
 		InstanceInfoJson->SetStringField(TEXT("CurrentState"), LobbyMatchInfo->CurrentState.ToString());
@@ -101,6 +103,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), UTGameMode->DefaultMaxPlayers);
 
 		if (UTGameState) {
+			InstanceInfoJson->SetStringField(TEXT("ServerInstanceGUID"), UTGameState->ServerInstanceGUID.ToString());
 			InstanceInfoJson->SetStringField(TEXT("ServerName"), UTGameState->ServerName);
 			InstanceInfoJson->SetStringField(TEXT("ServerMOTD"), UTGameState->ServerMOTD);
 			InstanceInfoJson->SetStringField(TEXT("CurrentState"), UTGameState->GetMatchState().ToString());
@@ -266,6 +269,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 					TSharedPtr<FJsonObject> MatchJson = GetInstanceInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, NULL);
 					MatchJson->SetNumberField("InstancePort", UTLobbyGameState->GameInstances[i].InstancePort);
 					MatchJson->SetBoolField("IsDataFromDedi", false);
+					//GameInstanceGUID
 					GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 				}
 			}

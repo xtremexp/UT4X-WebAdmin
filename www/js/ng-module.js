@@ -89,19 +89,24 @@ var ut4waApp = angular.module('ut4waApp', [])
 		$scope.GameInstances = response.data.GameInstances;
 		
 		for(var i=0; i<$scope.GameInstances.length; i++){
-			var dediHttpGameInfoUrl = getGameInstanceHttpUrl($scope.GameInstances[i]) + '/gameinfo';
-			if(isDebug){
-				dediHttpGameInfoUrl = 'http://localhost:8080/js/gameinfo-dedi-test.json';
-			}
 			
-			$http.get(dediHttpGameInfoUrl).then(
-			function(response2) {
-				console.log('Something good happened');
-				$scope.GameInstances = new Array();
-				$scope.GameInstances.push(response2.data.GameInstances[0]);
-			}, function(error){
-				console.log('Something bad happened');
-			});
+			if(response.data.IsLobbyServer){
+				var dediHttpGameInfoUrl = getGameInstanceHttpUrl($scope.GameInstances[i]) + '/gameinfo';
+				if(isDebug){
+					dediHttpGameInfoUrl = 'http://localhost:8080/js/gameinfo-dedi-test.json';
+				}
+				
+				$http.get(dediHttpGameInfoUrl).then(
+				function(response2) {
+					$scope.GameInstances[0].Players = new Array();
+					$scope.GameInstances[0].IsDataFromDedi = true;
+					for(var j=0; j< response2.data.GameInstances[0].Players.length; j++){
+						$scope.GameInstances[0].Players.push(response2.data.GameInstances[0].Players[j]);
+					}
+				}, function(error){
+					console.log('Something bad happened');
+				});
+			}
 		}
 		
     }, function(response) {

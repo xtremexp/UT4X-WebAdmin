@@ -3,11 +3,11 @@
 }
 
 .blueTeam  {
-	background-color: #bcbcec;
+	background-color: #5a3ef7;
 }
 
 .redTeam  {
-	background-color: #ff9f9f;
+	background-color: rgb(193, 91, 95);
 }
 
 .textRight {
@@ -22,10 +22,10 @@
 
 .leftPanel {
 	float: left;
-	width: 150px;
+	width: 130px;
 	position: relative;
 	height: 100%;
-	background-color: #b7b7b7;
+	background-color: #333333;
 	margin: 10px;
 }
 
@@ -33,7 +33,7 @@
 	float: left;
 	position: relative;
 	margin: 10px;
-	width: 800px;
+	width: 920px;
 }
 
 #top-menu {
@@ -48,4 +48,26 @@
 
 body {
 	background-color: #5d5d5d;
+	font-family: monospace;
+}
+
+thead tr th {
+	text-align: center;
+}
+
+.panel.panel-primary {
+	background-color: #4c4c4c;
+	color: white;
+}
+
+button {
+	color: black;
+}
+
+.panel-heading {
+	background-color: #2d2d2d !important;
+}
+
+.panel-primary>.panel-heading {
+	background-image: linear-gradient(to bottom,#333333 0,#212223 100%) !important;
 }
