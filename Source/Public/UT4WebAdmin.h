@@ -4,6 +4,7 @@
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTGameMode.h"
+#include "UTGameSession.h"
 #include "UT4WebAdminHttpServer.h"
 
 #include "UT4WebAdmin.generated.h"
@@ -29,8 +30,13 @@ class UUT4WebAdmin : public UObject
 	UPROPERTY(Config)
 		FString HeadAdminPassword;
 
+	/* If true player won't know which admin have kicked/banned/muted him*/
+	UPROPERTY(Config)
+		bool bAnonymousAdmin;
 
+	// Reference to http server
 	UUT4WebAdminHttpServer* _HttpServer;
+
 private:
 	AUTGameMode* GameMode;
 };

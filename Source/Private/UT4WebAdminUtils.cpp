@@ -26,22 +26,27 @@ APlayerController* getPlayerControllerByUID(const char* PlayerNetIdC) {
 	return NULL;
 }
 
-// TODO add kickedBy info and return player not found if error
-bool KickPlayerByNetId(const char* PlayerNetIdC, const char* ReasonC)
+// TODO add kickedBy/bannedBy info and return player not found if error
+bool KickPlayerByNetId(const char* PlayerNetIdC, const char* ReasonC, bool isBan)
 {
 	if (GWorld != NULL) {
 
 		AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 
-		if (BaseGameMode && BaseGameMode-> GameSession) {
+		if (BaseGameMode) {
+			const FString& playerUidStr = FString(PlayerNetIdC);
+			const FString& reasonStr = FString(ReasonC);
+			BaseGameMode->RconKick(playerUidStr, isBan, reasonStr);
+			/*
 			APlayerController* OtherPlayer;
+
 			OtherPlayer = getPlayerControllerByUID(PlayerNetIdC);
 
 			if (OtherPlayer != NULL) {
-				// from gamesession.h
-				const FText& BanReason = FText::FromString(ReasonC);
-				return BaseGameMode->GameSession->KickPlayer(OtherPlayer,  BanReason);
-			}
+			// from gamesession.h
+			const FText& BanReason = FText::FromString(ReasonC);
+			return BaseGameMode->GameSession->BanPlayer(OtherPlayer, BanReason);
+			}*/
 		}
 		
 	}
@@ -49,29 +54,6 @@ bool KickPlayerByNetId(const char* PlayerNetIdC, const char* ReasonC)
 	return false;
 }
 
-// TODO add bannedBy info and return player not found if error
-bool BanPlayerByNetId(const char* PlayerNetIdC, const char* ReasonC)
-{
-	if (GWorld != NULL) {
-
-		AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-
-		if (BaseGameMode && BaseGameMode->GameSession) {
-			APlayerController* OtherPlayer;
-
-			OtherPlayer = getPlayerControllerByUID(PlayerNetIdC);
-
-			if (OtherPlayer != NULL) {
-				// from gamesession.h
-				const FText& BanReason = FText::FromString(ReasonC);
-				return BaseGameMode->GameSession->BanPlayer(OtherPlayer, BanReason);
-			}
-		}
-
-	}
-
-	return false;
-}
 
 // TODO add info bannedBy and return player not found if error (player may have left game)
 bool MutePlayerByNetId(const char* PlayerNetIdC, const char* ReasonC)

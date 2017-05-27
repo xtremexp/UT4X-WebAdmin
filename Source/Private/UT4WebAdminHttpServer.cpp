@@ -1,6 +1,7 @@
 #include "UT4WebAdmin.h"
 #include "UT4WebAdminGameInfo.h"
 #include "UT4WebAdminServerInfo.h"
+#include "UT4WebAdminUtils.h"
 
 #define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
 #define UT4WA_WWW_FOLDER "www"
@@ -40,7 +41,7 @@ int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> j
 
 	// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
 	AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-	if (BaseGameMode->IsGameInstanceServer()) {
+	if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
 		// TODO set real hostname and port
 		MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
 	}
@@ -51,15 +52,91 @@ int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> j
 	return ret;
 }
 
+static int
+post_iterator(void *cls,
+	enum MHD_ValueKind kind,
+	const char *key,
+	const char *filename,
+	const char *content_type,
+	const char *transfer_encoding,
+	const char *data, uint64_t off, size_t size)
+{
+
+	return MHD_YES;
+}
+
 int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
 	size_t *upload_data_size, void **con_cls)
 {
+	const char* action;
+	
 	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
-		TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
-		return serve_json_file(connection, matchInfoJson);
+		action = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "action");
+		
+
+		FString FAction = FString(action);
+		
+
+		if (FAction.IsEmpty()) {
+			TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
+			return serve_json_file(connection, matchInfoJson);
+		}
+		else {
+			const char* playerId;
+			const char* message;
+			const char* isBan;
+
+			// TODO handle ban/kick removal
+			playerId = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "playerid");
+			message = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "message");
+			isBan = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "isban");
+
+			FString FPlayerId = FString(playerId);
+			struct MHD_Response *response;
+
+			if (FAction == "kick") {
+
+				bool bBan = (strcmp(isBan, "true") == 0);
+				bool kicked = KickPlayerByNetId(playerId, message, bBan);
+				const char* html;
+
+				if (kicked) {
+					if (bBan) {
+						html = "Player has been banned !";
+					}
+					else {
+						html = "Player has been kicked !";
+					}
+				}
+				else {
+					html = "<html><body>Player was not kicked!</body></html>";
+				}
+
+				response = MHD_create_response_from_buffer(strlen(html), (void*)html, MHD_RESPMEM_PERSISTENT);
+
+				// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
+				AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+				if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
+					// TODO set real hostname and port
+					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
+				}
+
+				int ret =  MHD_queue_response(connection, MHD_HTTP_OK, response);
+				MHD_destroy_response(response);
+				return ret;
+			}
+			else {
+				const char *notExist = "<html><body>Invalid action type</body></html>";
+				response = MHD_create_response_from_buffer(strlen(notExist), (void*)notExist, MHD_RESPMEM_PERSISTENT);
+				return MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
+			}
+
+			return MHD_NO;
+		}
+		
 	}
-	else {
-		// TODO handle post request for kick/ban/modify server info ...
+	else  if (strcmp(method, MHD_HTTP_METHOD_POST) == 0){
+
 	}
 
 	return MHD_NO;
@@ -73,9 +150,6 @@ int handle_server_info(void *cls, struct MHD_Connection *connection, const char 
 		AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 		TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON(BaseGameMode);
 		return serve_json_file(connection, serverInfoJson);
-	}
-	else {
-		// TODO handle post request for kick/ban/modify server info ...
 	}
 
 	return MHD_NO;
@@ -124,7 +198,7 @@ int handle_serve_file(void *cls,
 	f = fopen(concatString, "rb");
 
 	if (f != NULL) {
-		int fd = open(concatString, O_RDONLY);
+		int fd = _open(concatString, O_RDONLY);
 
 		// Determine file size
 		fseek(f, 0, SEEK_END);
@@ -204,10 +278,10 @@ int answer_to_connection(void *cls,
 
 	// USER AUTHENTICATED LET'S GO !
 
-	// TODO handle POST methods in the future
-	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) &&
-		(0 != strcmp(method, MHD_HTTP_METHOD_HEAD)))
+	// only handle get/post/head
+	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) && (0 != strcmp(method, MHD_HTTP_METHOD_HEAD)) && (0 != strcmp(method, MHD_HTTP_METHOD_POST))) {
 		return MHD_NO;
+	}
 
 	if (strcmp(url, "/gameinfo") == 0) {
 		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);

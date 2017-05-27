@@ -5,6 +5,7 @@
 #include "UnrealTournament.h"
 #include "UTBaseGameMode.h"
 #include "UTLobbyGameMode.h"
+#include "UT4WebAdminUtils.h"
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
 #include <io.h>
 #include <fcntl.h>

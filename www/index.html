@@ -37,36 +37,36 @@
 					NO MATCHS!
 					</div>
 					<div ng-if="hasMatches">
-						<div ng-repeat="gameInstance in ServerInfo.GameInstances">
+						<div ng-repeat="lobbyInstance in GameInstancesLightData">
 							<!-- Game info from parent lobby server -->
 							<!-- Less info and less reliable data since it's partial data and replicated from instanced server to lobby -->
-							<div ng-if="gameInstance.DataOrigin == 'lobby'" class="panel panel-primary">
+							<div class="panel panel-primary">
 							  <div class="panel-heading">
-								<h3 class="panel-title">{{gameInstance.CustomGameName}} - {{gameInstance.Ruleset.Title}} - {{gameInstance.MatchUpdate.MatchState}} - {{gameInstance.NumPlayersInMatch}} / {{gameInstance.Ruleset.MaxPlayers}} player(s)</h3>
+								<h3 class="panel-title">{{lobbyInstance.CustomGameName}} - {{lobbyInstance.Ruleset.Title}} - {{lobbyInstance.MatchUpdate.MatchState}} - {{lobbyInstance.NumPlayersInMatch}} / {{lobbyInstance.Ruleset.MaxPlayers}} player(s)</h3>
 							  </div>
 							  <div class="panel-body">
 								<div>
 									<div class="row">
 									  <div class="col-sm-6 col-md-4">
 										<div class="thumbnail">
-										  <img src="/img/maps/{{gameInstance.MapInfo.Title}}.png" alt="...">
+										  <img ng-src="/img/maps/{{lobbyInstance.MapInfo.Title}}.png">
 										  <div class="caption">
-											<h3>{{gameInstance.MapInfo.Title}}</h3>
-											<p>{{gameInstance.MapInfo.Author}}</p>
+											<h3>{{lobbyInstance.MapInfo.Title}}</h3>
+											<p>{{lobbyInstance.MapInfo.Author}}</p>
 											Switch to:
 											<select>
 												<!-- TODO red background color if map is not from epic and has no redirectUrl set -->
-												<option ng-repeat="mapInfo in gameInstance.Ruleset.MapList">{{mapInfo.MapAssetName}}</option>
+												<option ng-repeat="mapInfo in lobbyInstance.Ruleset.MapList">{{mapInfo.MapAssetName}}</option>
 											</select>
 											
 										  </div>
 										</div>
 									  </div>
 										<div>
-											<h1>Time: {{toMinutesSec(gameInstance.MatchUpdate.GameTime)}} / {{toMinutesSec(gameInstance.MatchUpdate.TimeLimit)}}</h1>
+											<h1>Time: {{toMinutesSec(lobbyInstance.MatchUpdate.GameTime)}} / {{toMinutesSec(lobbyInstance.MatchUpdate.TimeLimit)}}</h1>
 										</div>
-										<div ng-if="gameInstance.MatchUpdate.GoalScore > 0">
-											<h1>Goal Score: {{gameInstance.MatchUpdate.GoalScore}}</h1>
+										<div ng-if="lobbyInstance.MatchUpdate.GoalScore > 0">
+											<h1>Goal Score: {{lobbyInstance.MatchUpdate.GoalScore}}</h1>
 										</div>
 									</div>
 									<table class="table">
@@ -77,11 +77,11 @@
 												<th>Score</th>
 												<th>XP</th>
 												<th>Spec?</th>
-												<th>Avatar</th>
+												<th>Action</th>
 											</tr>
 										</thead>
 										<tbody>
-											<tr ng-repeat="player in gameInstance.AvailablePlayers"
+											<tr ng-repeat="player in lobbyInstance.AvailablePlayers"
 												ng-class="{ 'redTeam': (player.TeamNum == 0 && !player.bIsSpectator), 'blueTeam': (player.TeamNum == 1 && !player.bIsSpectator )}"
 												>
 												<td>{{player.PlayerName}}</td>
@@ -89,19 +89,77 @@
 												<td class="textRight">{{player.PlayerScore}}</td>
 												<td class="textRight">{{player.XPLevel}}</td>
 												<td><span ng-if="player.bIsSpectator">X</span></td>
-												<td>{{player.Avatar}}</td>
+												<td>
+													<button ng-click="kickPlayer(lobbyInstance, player.PlayerID, false, false)">KICK</button>
+													<button ng-click="kickPlayer(lobbyInstance, player.PlayerID, true, false)">BAN</button>
+												</td>
 											</tr>
 										</tbody>
 									</table>
 								</div>
 							  </div>
 							</div>
-							<!-- Game info directly from hosting server, reliable and more info  -->
-							<!-- data structure is different so need to set another template -->
-							<div ng-if="gameInstance.DataOrigin == 'dedi'" class="panel panel-primary">
-								This is a dedicated server !
+						</div>
+						<!-- FULL DATA -->
+						<!-- DISABLED FOR THE MOMENT NEED TO DEFINE A COMMON JSON STRUCTURE FOR BOTH DEDI/LOBBY INSTANCES
+						<div ng-repeat="dediInstance in GameInstancesFullData">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h3 class="panel-title">{{dediInstance.ServerName}} - {{dediInstance.Ruleset.Title}} - {{dediInstance.MatchState}} - {{dediInstance.NumPlayers}} / {{dediInstance.MaxPlayers}} player(s)</h3>
+								</div>
+								<div class="panel-body">
+									<div class="row">
+									  <div class="col-sm-6 col-md-4">
+										<div class="thumbnail">
+										  <img ng-src="/img/maps/{{lobbyInstance.MapInfo.Title}}.png">
+										  <div class="caption">
+											<h3>{{lobbyInstance.MapInfo.Title}}</h3>
+											<p>{{lobbyInstance.MapInfo.Author}}</p>
+											Switch to:
+											<select>
+												<option ng-repeat="mapInfo in dediInstance.MapList">{{mapInfo.MapAssetName}}</option>
+											</select>
+											
+										  </div>
+										</div>
+									  </div>
+										<div>
+											<h1>Time: {{toMinutesSec(dediInstance.ElapsedTime)}} / {{toMinutesSec(dediInstance.TimeLimit)}}</h1>
+										</div>
+										<div ng-if="dediInstance.GoalScore > 0">
+											<h1>Goal Score: {{dediInstance.GoalScore}}</h1>
+										</div>
+									</div>
+									<table class="table">
+										<thead>
+											<tr>
+												<th>Name</th>
+												<th>Id</th>
+												<th>Score</th>
+												<th>K</th>
+												<th>D</th>
+												<th>Spec?</th>
+												<th>IP</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr ng-repeat="player in dediInstance.Players"
+												ng-class="{ 'redTeam': (player.TeamNum == 0 && !player.bIsSpectator), 'blueTeam': (player.TeamNum == 1 && !player.bIsSpectator )}"
+												>
+												<td>{{player.ClanName}} {{player.PlayerName}}</td>
+												<td>{{player.UniqueID}}</td>
+												<td class="textRight">{{player.Score}}</td>
+												<td class="textRight">{{player.Kills}}</td>
+												<td class="textRight">{{player.Deaths}}</td>
+												<td><span ng-if="player.bIsSpectator">X</span></td>
+												<td>{{player.SavedNetworkAddress}}</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
 							</div>
 						</div>
+						-->
 					</div>
 				</div>
 			</div>

@@ -17,6 +17,67 @@ var ut4waApp = angular.module('ut4waApp', [])
 	$scope.toMinutesSec = function(seconds){
 		return new Date(seconds * 1000).toISOString().substr(14, 5);
 	};
+	
+	$scope.getGameInstanceHttpUrl = function(GameInstance){
+		return "http://" + window.location.hostname + ":" + (GameInstance.InstancePort + 100);
+	}
+	
+	/**
+	* Kicks or ban a player
+	* @param GameInstance
+	* @param PlayerNetId UniqueNetId of player
+	* @param isBan If true player will be banned else kicked
+	* @param isRemove If true will remove existing session kick or ban if existing, else will add kick or ban
+	*/
+	$scope.kickPlayer = function(GameInstance, PlayerNetId, isBan, isRemove) {
+		
+		var confirmMsg = '';
+		
+		if(!isRemove){
+			confirmMsg = 'Are you sure you want to ' + (isBan?'ban':'kick') + PlayerInfo.PlayerName + '?'
+		} else {
+			confirmMsg = 'Are you sure you want to remove sesssion ' + (isBan?'ban':'kick') + ' of ' + PlayerInfo.PlayerName + '?'
+		}
+		
+		// TODO add field for reason for kicking
+		if(confirm(confirmMsg)){
+			
+			var urlSuffix = '/gameinfo?action=kick&playerid='+PlayerNetId;
+			urlSuffix = '&message=Reason';
+			urlSuffix = '&isban=' + isBan;
+			urlSuffix = '&isremove=' + isRemove;
+			
+			var kickUrl = $scope.getGameInstanceHttpUrl(GameInstance) + urlSuffix;
+			
+			if(isDebug){
+				kickUrl = 'http://localhost:8080' + urlSuffix;
+			}
+			
+			console.log(kickUrl);
+
+			$http.get(kickUrl).then(function(response) {
+				console.log(response);
+			}, function(errorResponse){
+				console.log(errorResponse);
+			});
+		}
+	}
+
+	$scope.mutePlayer = function(GameInstance, PlayerInfo) {
+		
+		// TODO add field for reason for mute
+		if(confirm('Are you sure you want to mute ' + PlayerInfo.PlayerName + '?')){
+			var muteUrl = $scope.getGameInstanceHttpUrl(GameInstance) + '/gameinfo?action=mute&playerid='+PlayerInfo.PlayerID;
+		
+			console.log(muteUrl);
+		
+			$http.post(url).then(function(response) {
+				console.log(response);
+			}, function(errorResponse){
+				console.log(errorResponse);
+			});
+		}
+	}
   
 	$http.get(url).then(function(response) {
 		console.debug(response.data);
@@ -24,32 +85,20 @@ var ut4waApp = angular.module('ut4waApp', [])
 		$scope.IsLobbyServer = response.data.IsLobbyServer;
 		$scope.hasMatches = (response.data.ServerInfo.NumMatches > 0);
 		
+		$scope.GameInstancesLightData = new Array();
+		$scope.GameInstancesFullData = new Array();
+		
 		// lobby does not get full data from instanced servers
 		if($scope.IsLobbyServer){
-			$scope.ServerInfo = response.data.ServerInfo;
-			
-			// load full info directly from instanced server and not from parent lobby server
-			for(var i=0; i < $scope.ServerInfo.GameInstances.length; i++){
-				var urlDedi = "http://" + window.location.hostname + ":" + ($scope.ServerInfo.GameInstances[i].InstancePort + 100) + "/gameinfo";
-				if(isDebug){
-					urlDedi = "/js/gameinfo-dedi-test.json";
-				}
-				console.debug(urlDedi);
-				
-				$http.get(urlDedi).then(function(response2) {
-					$scope.ServerInfo.GameInstances[i] = response2.data.ServerInfo.GameInstances[0];
-				}, function(response2){
-					console.error(response2);
-				});
-			}
+			$scope.GameInstancesLightData = response.data.ServerInfo.GameInstances;
+			// TODO load extra data directly from instanced server rather than lobby
 		} 
 		// dedicated server or server instanced from parent lobby server 
 		else {
-			$scope.ServerInfo = response.data.ServerInfo;
+			$scope.GameInstancesFullData.push(response.data.ServerInfo.GameInstances[0]);
 		}
 		
     }, function(response) {
-        //Second function handles error
         $scope.content = "Something went wrong";
     });
   });
