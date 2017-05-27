@@ -1,14 +1,117 @@
 {
 	"IsLobbyServer": false,
-	"ServerInfo":
-	{
-		"IsPassworded": true,
-		"NumPlayers": 1,
-		"NumMatches": 1,
-		"GameInstances": [
+	"IsPassworded": true,
+	"NumPlayers": 1,
+	"NumMatches": 1,
+	"GameInstances": [
+		{
+			"IsDataFromDedi": true,
+			"bPrivateMatch": 1,
+			"bRankLocked": 0,
+			"NumPlayers": 1,
+			"NumSpectators": 0,
+			"MaxPlayers": 10,
+			"ServerName": "Blitz on FR-MeltDown ",
+			"ServerMOTD": "Welcome\\n\\nThis is a test server for webadmin module for UT4\\nServer can be restarted at any time without notification! ",
+			"CurrentState": "WaitingToStart",
+			"TimeLimit": 0,
+			"GoalScore": 0,
+			"ElapsedTime": 0,
+			"HasMatchStarted": false,
+			"HasMatchEnded": false,
+			"bTeamGame": true,
+			"MatchState": "WaitingToStart",
+			"Players": [
+				{
+					"UniqueId": "INVALID",
+					"bIsSpectator": false,
+					"PlayerName": "Acolyte",
+					"PlayerScore": 0,
+					"XPLevel": -1,
+					"TeamNum": 0,
+					"Avatar": "None",
+					"Kills": 0,
+					"DamageDone": 0,
+					"Deaths": 0,
+					"bIsRconAdmin": false,
+					"ClanName": "",
+					"ElapsedTime": 0,
+					"CountryFlag": "None",
+					"EpicAccountName": "",
+					"LastActiveTime": 34.298473358154297,
+					"Ping": 22,
+					"SavedNetworkAddress": "",
+					"bIsABot": true
+				},
+				{
+					"UniqueId": "INVALID",
+					"bIsSpectator": false,
+					"PlayerName": "Trollface",
+					"PlayerScore": 0,
+					"XPLevel": -1,
+					"TeamNum": 1,
+					"Avatar": "None",
+					"Kills": 0,
+					"DamageDone": 0,
+					"Deaths": 0,
+					"bIsRconAdmin": false,
+					"ClanName": "",
+					"ElapsedTime": 0,
+					"CountryFlag": "None",
+					"EpicAccountName": "",
+					"LastActiveTime": 34.165794372558594,
+					"Ping": 22,
+					"SavedNetworkAddress": "",
+					"bIsABot": true
+				},
+				{
+					"UniqueId": "INVALID",
+					"bIsSpectator": false,
+					"PlayerName": "Kragoth",
+					"PlayerScore": 0,
+					"XPLevel": -1,
+					"TeamNum": 0,
+					"Avatar": "None",
+					"Kills": 0,
+					"DamageDone": 0,
+					"Deaths": 0,
+					"bIsRconAdmin": false,
+					"ClanName": "",
+					"ElapsedTime": 0,
+					"CountryFlag": "None",
+					"EpicAccountName": "",
+					"LastActiveTime": 34.148769378662109,
+					"Ping": 21,
+					"SavedNetworkAddress": "",
+					"bIsABot": true
+				},
+				{
+					"UniqueId": "0d4441ce42fa59dfd21a40525c43b0d8",
+					"bIsSpectator": false,
+					"PlayerName": "WinterIsComing"
+					"PlayerScore": 0,
+					"XPLevel": 1267311,
+					"TeamNum": 1,
+					"Avatar": "UT.Avatar.0",
+					"Kills": 0,
+					"DamageDone": 0,
+					"Deaths": 0,
+					"bIsRconAdmin": false,
+					"ClanName": "~?~",
+					"ElapsedTime": 0,
+					"CountryFlag": "Iceland",
+					"EpicAccountName": "",
+					"LastActiveTime": 3.9518818855285645,
+					"Ping": 2,
+					"SavedNetworkAddress": "10.20.30.40",
+					"bIsABot": false
+				}
+			],
+			"Map":
 			{
-				"DataOrigin": "dedi"
-			}
-		]
-	}
+			},
+			"MapList": [],
+			"InstancePort": 0
+		}
+	]
 }

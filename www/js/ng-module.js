@@ -18,23 +18,23 @@ var ut4waApp = angular.module('ut4waApp', [])
 		return new Date(seconds * 1000).toISOString().substr(14, 5);
 	};
 	
-	$scope.getGameInstanceHttpUrl = function(GameInstance){
+	getGameInstanceHttpUrl = function(GameInstance){
 		return "http://" + window.location.hostname + ":" + (GameInstance.InstancePort + 100);
 	}
 	
 	/**
 	* Kicks or ban a player
 	* @param GameInstance
-	* @param PlayerNetId UniqueNetId of player
+	* @param PlayerInfo Player to be kicked or banned
 	* @param isBan If true player will be banned else kicked
 	* @param isRemove If true will remove existing session kick or ban if existing, else will add kick or ban
 	*/
-	$scope.kickPlayer = function(GameInstance, PlayerNetId, isBan, isRemove) {
+	$scope.kickPlayer = function(GameInstance, PlayerInfo, isBan, isRemove) {
 		
 		var confirmMsg = '';
 		
 		if(!isRemove){
-			confirmMsg = 'Are you sure you want to ' + (isBan?'ban':'kick') + PlayerInfo.PlayerName + '?'
+			confirmMsg = 'Are you sure you want to' + (isBan?' ban ':' kick ') + PlayerInfo.PlayerName + ' ?'
 		} else {
 			confirmMsg = 'Are you sure you want to remove sesssion ' + (isBan?'ban':'kick') + ' of ' + PlayerInfo.PlayerName + '?'
 		}
@@ -47,7 +47,7 @@ var ut4waApp = angular.module('ut4waApp', [])
 			urlSuffix = '&isban=' + isBan;
 			urlSuffix = '&isremove=' + isRemove;
 			
-			var kickUrl = $scope.getGameInstanceHttpUrl(GameInstance) + urlSuffix;
+			var kickUrl = getGameInstanceHttpUrl(GameInstance) + urlSuffix;
 			
 			if(isDebug){
 				kickUrl = 'http://localhost:8080' + urlSuffix;
@@ -67,7 +67,7 @@ var ut4waApp = angular.module('ut4waApp', [])
 		
 		// TODO add field for reason for mute
 		if(confirm('Are you sure you want to mute ' + PlayerInfo.PlayerName + '?')){
-			var muteUrl = $scope.getGameInstanceHttpUrl(GameInstance) + '/gameinfo?action=mute&playerid='+PlayerInfo.PlayerID;
+			var muteUrl = getGameInstanceHttpUrl(GameInstance) + '/gameinfo?action=mute&playerid='+PlayerInfo.PlayerID;
 		
 			console.log(muteUrl);
 		
@@ -80,22 +80,28 @@ var ut4waApp = angular.module('ut4waApp', [])
 	}
   
 	$http.get(url).then(function(response) {
-		console.debug(response.data);
+		console.log(response.data);
         
-		$scope.IsLobbyServer = response.data.IsLobbyServer;
-		$scope.hasMatches = (response.data.ServerInfo.NumMatches > 0);
+		$scope.DataFromLobby = response.data.IsLobbyServer;
+		$scope.DataFromDedi = !response.data.IsLobbyServer;
+		$scope.hasMatches = (response.data.NumMatches > 0);
 		
-		$scope.GameInstancesLightData = new Array();
-		$scope.GameInstancesFullData = new Array();
+		$scope.GameInstances = response.data.GameInstances;
 		
-		// lobby does not get full data from instanced servers
-		if($scope.IsLobbyServer){
-			//$scope.GameInstancesLightData = response.data.ServerInfo.GameInstances;
-			// TODO load extra data directly from instanced server rather than lobby
-		} 
-		// dedicated server or server instanced from parent lobby server 
-		else {
-			$scope.GameInstancesFullData.push(response.data.ServerInfo.GameInstances[0]);
+		for(var i=0; i<$scope.GameInstances.length; i++){
+			var dediHttpGameInfoUrl = getGameInstanceHttpUrl($scope.GameInstances[i]) + '/gameinfo';
+			if(isDebug){
+				dediHttpGameInfoUrl = 'http://localhost:8080/js/gameinfo-dedi-test.json';
+			}
+			
+			$http.get(dediHttpGameInfoUrl).then(
+			function(response2) {
+				console.log('Something good happened');
+				$scope.GameInstances = new Array();
+				$scope.GameInstances.push(response2.data.GameInstances[0]);
+			}, function(error){
+				console.log('Something bad happened');
+			});
 		}
 		
     }, function(response) {

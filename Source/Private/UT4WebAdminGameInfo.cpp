@@ -35,56 +35,9 @@ TSharedPtr<FJsonObject> GetGameRulesetJSON(TWeakObjectPtr<AUTReplicatedGameRules
 	return RulesetJson;
 }
 
-TSharedPtr<FJsonObject> GetMatchUpdateJSON(FMatchUpdate* FMatchUpdate)
-{
-	TSharedPtr<FJsonObject> MatchUpdateJson = MakeShareable(new FJsonObject);
 
-	if (FMatchUpdate) {
-		MatchUpdateJson->SetNumberField(TEXT("TimeLimit"), FMatchUpdate->TimeLimit);
-		MatchUpdateJson->SetNumberField(TEXT("GoalScore"), FMatchUpdate->GoalScore);
-		MatchUpdateJson->SetNumberField(TEXT("GameTime"), FMatchUpdate->GameTime);
-		MatchUpdateJson->SetNumberField(TEXT("TimeLimit"), FMatchUpdate->TimeLimit);
-		MatchUpdateJson->SetBoolField(TEXT("bMatchHasBegun"), FMatchUpdate->bMatchHasBegun);
-		MatchUpdateJson->SetBoolField(TEXT("bMatchHasEnded"), FMatchUpdate->bMatchHasEnded);
-		MatchUpdateJson->SetStringField(TEXT("MatchState"), FMatchUpdate->MatchState.ToString());
-		
-
-		TArray<TSharedPtr<FJsonValue>> TeamScoresJson;
-
-		for (int32 Idx = 0; Idx < FMatchUpdate->TeamScores.Num(); Idx++)
-		{
-			TSharedPtr<FJsonObject> TeamScoreJson = MakeShareable(new FJsonObject);
-			TeamScoreJson->SetNumberField(FString::FromInt(Idx), FMatchUpdate->TeamScores[Idx]);
-
-			TeamScoresJson.Add(MakeShareable(new FJsonValueObject(TeamScoreJson)));
-		}
-
-		MatchUpdateJson->SetArrayField(TEXT("TeamScores"), TeamScoresJson);
-	}
-
-	return MatchUpdateJson;
-}
-
-TSharedPtr<FJsonObject> GetRemotePlayerInfoJSON(FRemotePlayerInfo* RemotePlayerInfo)
-{
-	TSharedPtr<FJsonObject> RemotePlayerInfoJson = MakeShareable(new FJsonObject);
-
-	if (RemotePlayerInfo) {
-		RemotePlayerInfoJson->SetStringField(TEXT("PlayerID"), RemotePlayerInfo->PlayerID.ToString());
-		RemotePlayerInfoJson->SetBoolField(TEXT("bIsSpectator"), RemotePlayerInfo->bIsSpectator);
-		RemotePlayerInfoJson->SetStringField(TEXT("PlayerName"), RemotePlayerInfo->PlayerName);
-		RemotePlayerInfoJson->SetNumberField(TEXT("PlayerScore"), RemotePlayerInfo->PlayerScore);
-		RemotePlayerInfoJson->SetNumberField(TEXT("RankCheck"), RemotePlayerInfo->RankCheck);
-		RemotePlayerInfoJson->SetNumberField(TEXT("XPLevel"), RemotePlayerInfo->XPLevel);
-		RemotePlayerInfoJson->SetNumberField(TEXT("TeamNum"), RemotePlayerInfo->TeamNum); // 0 = Red, 1 = Blue
-		RemotePlayerInfoJson->SetStringField(TEXT("Avatar"), RemotePlayerInfo->Avatar.ToString());
-	}
-
-	return RemotePlayerInfoJson;
-}
 
 // FRemotePlayerInfo
-
 TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapInfo)
 {
 	TSharedPtr<FJsonObject> MapInfoJson = MakeShareable(new FJsonObject);
@@ -104,225 +57,230 @@ TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapI
 	return MapInfoJson;
 }
 
-// Fields must be the same as getLobbyMatchInfo
-TSharedPtr<FJsonObject> GetDediMatchInfoJSON(AUTGameMode* UTGameMode)
+
+TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, AUTGameMode* UTGameMode)
 {
-	TSharedPtr<FJsonObject> MatchJson = MakeShareable(new FJsonObject);
+	TSharedPtr<FJsonObject> InstanceInfoJson = MakeShareable(new FJsonObject);
+	AUTGameState* UTGameState = NULL;
+	
+	if (UTGameMode) {
+		UTGameState = UTGameMode->UTGameState;
+	}
 
-	if (UTGameMode != NULL) {
+	// Global Match info
+	// Data from lobby parent server
+	if (LobbyMatchInfo) {
+		InstanceInfoJson->SetNumberField(TEXT("bPrivateMatch"), LobbyMatchInfo->bPrivateMatch);
+		InstanceInfoJson->SetNumberField(TEXT("bRankLocked"), LobbyMatchInfo->bRankLocked);
+		InstanceInfoJson->SetNumberField(TEXT("NumPlayers"), LobbyMatchInfo->NumPlayersInMatch());
+		InstanceInfoJson->SetNumberField(TEXT("NumSpectators"), LobbyMatchInfo->NumSpectatorsInMatch());
+		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), 0);
 
-		AUTGameState* UTGameState = UTGameMode->UTGameState;
+		InstanceInfoJson->SetStringField(TEXT("ServerName"), LobbyMatchInfo->CustomGameName);
+		InstanceInfoJson->SetStringField(TEXT("ServerMOTD"), "");
+		InstanceInfoJson->SetStringField(TEXT("CurrentState"), LobbyMatchInfo->CurrentState.ToString());
 
-		TArray<TSharedPtr<FJsonValue>> PlayersJson;
+		FMatchUpdate* MatchUpdate = &LobbyMatchInfo->MatchUpdate;
 
-		MatchJson->SetNumberField(TEXT("bPrivateMatch"), UTGameMode->bPrivateMatch);
-		MatchJson->SetNumberField(TEXT("bRankLocked"), UTGameMode->bRankLocked);
-		// not useful data for the moment
-		/*
-		MatchJson->SetNumberField(TEXT("RedTeamSkill"), UTGameMode->RedTeamSkill);
-		MatchJson->SetNumberField(TEXT("BlueTeamSkill"), UTGameMode->BlueTeamSkill);
-		MatchJson->SetNumberField(TEXT("BlueTeamKills"), UTGameMode->BlueTeamKills);
-		MatchJson->SetNumberField(TEXT("RedTeamKills"), UTGameMode->RedTeamKills);
-		*/
-		MatchJson->SetNumberField(TEXT("NumPlayers"), UTGameMode->GetNumPlayers());
-		MatchJson->SetNumberField(TEXT("MaxPlayers"), UTGameMode->DefaultMaxPlayers);
+		InstanceInfoJson->SetNumberField(TEXT("TimeLimit"), MatchUpdate->TimeLimit);
+		InstanceInfoJson->SetNumberField(TEXT("GoalScore"), MatchUpdate->GoalScore);
+		InstanceInfoJson->SetNumberField(TEXT("ElapsedTime"), MatchUpdate->GameTime);
+
+		InstanceInfoJson->SetBoolField(TEXT("HasMatchStarted"), MatchUpdate->bMatchHasBegun);
+		InstanceInfoJson->SetBoolField(TEXT("HasMatchEnded"), MatchUpdate->bMatchHasEnded);
+		InstanceInfoJson->SetBoolField(TEXT("bTeamGame"), MatchUpdate->TeamScores.Num() > 0);
+
+		InstanceInfoJson->SetStringField(TEXT("MatchState"), MatchUpdate->MatchState.ToString());
+	}
+	// Data from dedi or instanced lobby server
+	else if(UTGameMode) {
+		InstanceInfoJson->SetNumberField(TEXT("bPrivateMatch"), UTGameMode->bPrivateMatch);
+		InstanceInfoJson->SetNumberField(TEXT("bRankLocked"), UTGameMode->bRankLocked);
+		InstanceInfoJson->SetNumberField(TEXT("NumPlayers"), UTGameMode->GetNumPlayers());
+		InstanceInfoJson->SetNumberField(TEXT("NumSpectators"), 0);
+		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), UTGameMode->DefaultMaxPlayers);
 
 		if (UTGameState) {
-			for (int32 Idx = 0; Idx < UTGameState->PlayerArray.Num(); Idx++)
-			{
-				AUTPlayerState* UTPlayerState = Cast<AUTPlayerState>(UTGameState->PlayerArray[Idx]);
-				if (UTPlayerState != NULL) {
-					TSharedPtr<FJsonObject> PlayerJson = GetUTPlayerStateJSON(UTPlayerState);
-					PlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
-				}
+			InstanceInfoJson->SetStringField(TEXT("ServerName"), UTGameState->ServerName);
+			InstanceInfoJson->SetStringField(TEXT("ServerMOTD"), UTGameState->ServerMOTD);
+			InstanceInfoJson->SetStringField(TEXT("CurrentState"), UTGameState->GetMatchState().ToString());
+
+			InstanceInfoJson->SetNumberField(TEXT("TimeLimit"), UTGameState->TimeLimit);
+			InstanceInfoJson->SetNumberField(TEXT("GoalScore"), UTGameState->GoalScore);
+			InstanceInfoJson->SetNumberField(TEXT("ElapsedTime"), UTGameState->ElapsedTime);
+
+			InstanceInfoJson->SetBoolField(TEXT("HasMatchStarted"), UTGameState->HasMatchStarted());
+			InstanceInfoJson->SetBoolField(TEXT("HasMatchEnded"), UTGameState->HasMatchEnded());
+			InstanceInfoJson->SetBoolField(TEXT("bTeamGame"), UTGameState->bTeamGame);
+
+			InstanceInfoJson->SetStringField(TEXT("MatchState"), UTGameMode->GetMatchState().ToString());
+		}
+	}
+
+	TArray<TSharedPtr<FJsonValue>> PlayersJson;
+
+	// Players
+	if (LobbyMatchInfo) {
+		
+		for (int32 PlayerIdx = 0; PlayerIdx < LobbyMatchInfo->PlayersInMatchInstance.Num(); PlayerIdx++)
+		{
+			FRemotePlayerInfo* RemotePlayerInfo = &LobbyMatchInfo->PlayersInMatchInstance[PlayerIdx];
+			if (RemotePlayerInfo) {
+				TSharedPtr<FJsonObject> PlayerJson = MakeShareable(new FJsonObject);
+				PlayerJson->SetStringField(TEXT("UniqueId"), RemotePlayerInfo->PlayerID.ToString());
+				PlayerJson->SetBoolField(TEXT("bIsSpectator"), RemotePlayerInfo->bIsSpectator);
+				PlayerJson->SetStringField(TEXT("PlayerName"), RemotePlayerInfo->PlayerName);
+				PlayerJson->SetNumberField(TEXT("PlayerScore"), RemotePlayerInfo->PlayerScore);
+				PlayerJson->SetNumberField(TEXT("XPLevel"), RemotePlayerInfo->XPLevel);
+				PlayerJson->SetNumberField(TEXT("TeamNum"), RemotePlayerInfo->TeamNum); // 0 = Red, 1 = Blue
+				PlayerJson->SetStringField(TEXT("Avatar"), RemotePlayerInfo->Avatar.ToString());
+				PlayerJson->SetBoolField(TEXT("bIsABot"), false); // lobby always send real players data
+				PlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
 			}
+		}
+	}
+	else if (UTGameMode && UTGameState) {
+		for (int32 Idx = 0; Idx < UTGameState->PlayerArray.Num(); Idx++)
+		{
+			AUTPlayerState* UTPlayerState = Cast<AUTPlayerState>(UTGameState->PlayerArray[Idx]);
+			if (UTPlayerState != NULL) {
+				TSharedPtr<FJsonObject> PlayerJson = MakeShareable(new FJsonObject);
+				PlayerJson->SetStringField(TEXT("UniqueId"), UTPlayerState->UniqueId.ToString());
+				PlayerJson->SetBoolField(TEXT("bIsSpectator"), UTPlayerState->bIsSpectator);
+				PlayerJson->SetStringField(TEXT("PlayerName"), UTPlayerState->PlayerName);
+				PlayerJson->SetNumberField(TEXT("PlayerScore"), UTPlayerState->Score);
+				PlayerJson->SetNumberField(TEXT("XPLevel"), UTPlayerState->GetPrevXP());
+				PlayerJson->SetNumberField(TEXT("TeamNum"), UTPlayerState->GetTeamNum()); // 0 = Red, 1 = Blue
+				PlayerJson->SetStringField(TEXT("Avatar"), UTPlayerState->Avatar.ToString());
+				PlayerJson->SetBoolField(TEXT("bIsABot"), UTPlayerState->bIsABot);
 
-			MatchJson->SetStringField(TEXT("ServerName"), UTGameState->ServerName);
-			MatchJson->SetStringField(TEXT("ServerMOTD"), UTGameState->ServerMOTD);
-			MatchJson->SetBoolField(TEXT("bTeamGame"), UTGameState->bTeamGame);
-			MatchJson->SetBoolField(TEXT("bIsQuickMatch"), UTGameState->bIsQuickMatch);
-			MatchJson->SetBoolField(TEXT("bRequireFull"), UTGameState->bRequireFull);
-			MatchJson->SetNumberField(TEXT("GoalScore"), UTGameState->GoalScore);
-			MatchJson->SetNumberField(TEXT("TimeLimit"), UTGameState->TimeLimit);
-			MatchJson->SetNumberField(TEXT("RemainingTime"), UTGameState->GetRemainingTime());
-			MatchJson->SetStringField(TEXT("MatchState"), UTGameState->GetMatchState().ToString());
-			MatchJson->SetNumberField(TEXT("ElapsedTime"), UTGameState->ElapsedTime);
+				// Extra info only from dedi server can't get this from lobby parent server
+				PlayerJson->SetNumberField(TEXT("Kills"), UTPlayerState->Kills);
+				PlayerJson->SetNumberField(TEXT("DamageDone"), UTPlayerState->DamageDone);
+				PlayerJson->SetNumberField(TEXT("Deaths"), UTPlayerState->Deaths);
+				PlayerJson->SetBoolField(TEXT("bIsRconAdmin"), UTPlayerState->bIsRconAdmin);
+				PlayerJson->SetStringField(TEXT("ClanName"), UTPlayerState->ClanName);
+				PlayerJson->SetNumberField(TEXT("ElapsedTime"), UTPlayerState->ElapsedTime);
+				PlayerJson->SetStringField(TEXT("CountryFlag"), UTPlayerState->CountryFlag.ToString());
+				PlayerJson->SetStringField(TEXT("EpicAccountName"), UTPlayerState->EpicAccountName);
+				PlayerJson->SetNumberField(TEXT("LastActiveTime"), UTPlayerState->LastActiveTime);
+				PlayerJson->SetNumberField(TEXT("Ping"), UTPlayerState->Ping);
+				PlayerJson->SetStringField(TEXT("SavedNetworkAddress"), UTPlayerState->SavedNetworkAddress);
 
-			TArray<TSharedPtr<FJsonValue>> MapInfosJson;
+				PlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
+			}
+		}
+	}
 
-			for (int32 Idx = 0; Idx < UTGameState->MapVoteList.Num(); Idx++)
+	InstanceInfoJson->SetArrayField(TEXT("Players"), PlayersJson);
+
+	// Map Played
+	TSharedPtr<FJsonObject> MapInfoJson = NULL;
+
+	// Current map being played
+	if (LobbyMatchInfo) {
+		MapInfoJson = GetMapInfoJSON(LobbyMatchInfo->InitialMapInfo);
+	}
+	else if (UTGameMode && UTGameState) {
+		// TODO get map info for dedi
+		MapInfoJson = MakeShareable(new FJsonObject); //GetMapInfoJSON(LobbyMatchInfo->InitialMapInfo);
+	}
+
+	InstanceInfoJson->SetObjectField(TEXT("Map"), MapInfoJson);
+
+
+	// Map List
+	TArray<TSharedPtr<FJsonValue>> MapInfosJson;
+
+	if (LobbyMatchInfo) {
+		TWeakObjectPtr<AUTReplicatedGameRuleset> GameRuleset = LobbyMatchInfo->CurrentRuleset;
+		if (GameRuleset != NULL) {
+			for (int32 MapIdx = 0; MapIdx < GameRuleset->MapList.Num(); MapIdx++)
 			{
-				AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[Idx];
-				TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
+				TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(GameRuleset->MapList[MapIdx]);
 				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 			}
-
-			MatchJson->SetArrayField(TEXT("MapList"), MapInfosJson);
 		}
-
-		MatchJson->SetArrayField(TEXT("Players"), PlayersJson);
 	}
-
-	return MatchJson;
-}
-
-TSharedPtr<FJsonObject> GetLobbyMatchInfoJSON(AUTLobbyMatchInfo* AvailableMatch, uint32 InstancePort)
-{
-	TSharedPtr<FJsonObject> MatchJson = MakeShareable(new FJsonObject);
-
-	if (AvailableMatch != NULL) {
-		// will be used to get full game info from http://<serverhost>:<InstancePort+100>/gameinfo url
-		MatchJson->SetNumberField(TEXT("InstancePort"), InstancePort);
-		MatchJson->SetStringField(TEXT("CurrentState"), AvailableMatch->CurrentState.ToString());
-		MatchJson->SetNumberField(TEXT("bPrivateMatch"), AvailableMatch->bPrivateMatch);
-		MatchJson->SetNumberField(TEXT("bSpectatable"), AvailableMatch->bSpectatable);
-		MatchJson->SetNumberField(TEXT("bJoinAnytime"), AvailableMatch->bJoinAnytime);
-		MatchJson->SetNumberField(TEXT("bRankLocked"), AvailableMatch->bRankLocked);
-		MatchJson->SetNumberField(TEXT("GameInstanceID"), AvailableMatch->GameInstanceID);
-		MatchJson->SetStringField(TEXT("GameInstanceGUID"), AvailableMatch->GameInstanceGUID);
-		MatchJson->SetNumberField(TEXT("NumPlayersInMatch"), AvailableMatch->NumPlayersInMatch());
-		MatchJson->SetNumberField(TEXT("NumSpectatorsInMatch"), AvailableMatch->NumSpectatorsInMatch());
-		MatchJson->SetNumberField(TEXT("RankCheck"), AvailableMatch->RankCheck); // average rank
-		MatchJson->SetNumberField(TEXT("InstanceLaunchTime"), AvailableMatch->InstanceLaunchTime);
-		MatchJson->SetStringField(TEXT("CustomGameName"), AvailableMatch->CustomGameName);
-
-		TSharedPtr<FJsonObject> CurrentRulesetJson = GetGameRulesetJSON(AvailableMatch->CurrentRuleset);
-		MatchJson->SetObjectField(TEXT("Ruleset"), CurrentRulesetJson);
-
-		TSharedPtr<FJsonObject> MatchUpdateJson = GetMatchUpdateJSON(&AvailableMatch->MatchUpdate);
-		MatchJson->SetObjectField(TEXT("MatchUpdate"), MatchUpdateJson);
-
-		TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(AvailableMatch->InitialMapInfo);
-		MatchJson->SetObjectField(TEXT("MapInfo"), MapInfoJson);
-
-		// Players Info
-		TArray<TSharedPtr<FJsonValue>> AvailablePlayersJson;
-		for (int32 PlayerIdx = 0; PlayerIdx < AvailableMatch->PlayersInMatchInstance.Num(); PlayerIdx++)
+	else if (UTGameMode && UTGameState) {
+		for (int32 Idx = 0; Idx < UTGameState->MapVoteList.Num(); Idx++)
 		{
-			TSharedPtr<FJsonObject> PlayerJson = GetRemotePlayerInfoJSON(&AvailableMatch->PlayersInMatchInstance[PlayerIdx]);
-			AvailablePlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
+			AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[Idx];
+			TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
+			MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 		}
-
-		MatchJson->SetArrayField(TEXT("AvailablePlayers"), AvailablePlayersJson);
 	}
 
-	return MatchJson;
+	InstanceInfoJson->SetArrayField(TEXT("MapList"), MapInfosJson);
+
+	// TODO ruleset for lobby
+	//TSharedPtr<FJsonObject> CurrentRulesetJson = GetGameRulesetJSON(AvailableMatch->CurrentRuleset);
+	//MatchJson->SetObjectField(TEXT("Ruleset"), CurrentRulesetJson);
+
+
+	return InstanceInfoJson;
 }
 
-TSharedPtr<FJsonObject> GetUTPlayerStateJSON(AUTPlayerState* PlayerState)
-{
-	TSharedPtr<FJsonObject> PlayerJson = MakeShareable(new FJsonObject);
-
-	if (PlayerState != NULL) {
-		PlayerJson->SetStringField(TEXT("PlayerName"), PlayerState->PlayerName);
-		PlayerJson->SetNumberField(TEXT("Kills"), PlayerState->Kills);
-		PlayerJson->SetNumberField(TEXT("DamageDone"), PlayerState->DamageDone);
-		PlayerJson->SetNumberField(TEXT("Deaths"), PlayerState->Deaths);
-		PlayerJson->SetBoolField(TEXT("bIsRconAdmin"), PlayerState->bIsRconAdmin);
-		PlayerJson->SetStringField(TEXT("ClanName"), PlayerState->ClanName);
-		PlayerJson->SetNumberField(TEXT("ElapsedTime"), PlayerState->ElapsedTime);
-		PlayerJson->SetNumberField(TEXT("XP"), PlayerState->GetPrevXP());
-		PlayerJson->SetStringField(TEXT("CountryFlag"), PlayerState->CountryFlag.ToString());
-		PlayerJson->SetStringField(TEXT("EpicAccountName"), PlayerState->EpicAccountName);
-		
-
-		// useless data for the moment might uncomment in future
-		/*
-		PlayerJson->SetNumberField(TEXT("Assists"), PlayerState->Assists);
-		PlayerJson->SetStringField(TEXT("ClampedName"), PlayerState->ClampedName);
-		PlayerJson->SetNumberField(TEXT("PartySize"), PlayerState->PartySize);
-		PlayerJson->SetStringField(TEXT("PartyLeader"), PlayerState->PartyLeader);
-		PlayerJson->SetNumberField(TEXT("KillAssists"), PlayerState->KillAssists);
-		PlayerJson->SetNumberField(TEXT("FlagCaptures"), PlayerState->FlagCaptures);
-		PlayerJson->SetNumberField(TEXT("FlagReturns"), PlayerState->FlagReturns);
-		PlayerJson->SetNumberField(TEXT("DuelRank"), PlayerState->DuelRank);
-		PlayerJson->SetNumberField(TEXT("CTFRank"), PlayerState->CTFRank);
-		PlayerJson->SetNumberField(TEXT("TDMRank"), PlayerState->TDMRank);
-		PlayerJson->SetNumberField(TEXT("DMRank"), PlayerState->DMRank);
-		PlayerJson->SetNumberField(TEXT("ShowdownRank"), PlayerState->ShowdownRank);
-		PlayerJson->SetNumberField(TEXT("FlagRunRank"), PlayerState->FlagRunRank);
-		PlayerJson->SetNumberField(TEXT("RankedDuelRank"), PlayerState->RankedDuelRank);
-		PlayerJson->SetNumberField(TEXT("RankedCTFRank"), PlayerState->RankedCTFRank);
-		PlayerJson->SetNumberField(TEXT("RankedShowdownRank"), PlayerState->RankedShowdownRank);
-		PlayerJson->SetNumberField(TEXT("RankedFlagRunRank"), PlayerState->RankedFlagRunRank);
-		PlayerJson->SetNumberField(TEXT("KickCount"), PlayerState->KickCount);
-		*/
-		PlayerJson->SetNumberField(TEXT("LastActiveTime"), PlayerState->LastActiveTime);
-
-		PlayerJson->SetNumberField(TEXT("Ping"), PlayerState->Ping);
-		PlayerJson->SetStringField(TEXT("SavedNetworkAddress"), PlayerState->SavedNetworkAddress);
-
-		PlayerJson->SetNumberField(TEXT("Score"), PlayerState->Score);
-		PlayerJson->SetNumberField(TEXT("TeamNum"), PlayerState->GetTeamNum());
-		PlayerJson->SetBoolField(TEXT("bIsSpectator"), PlayerState->bIsSpectator);
-		PlayerJson->SetNumberField(TEXT("UniqueID"), PlayerState->GetUniqueID());
-	}
-
-	return PlayerJson;
-}
 
 TSharedPtr<FJsonObject> GetGameInfoJSON()
 {
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	TSharedPtr<FJsonObject> ServerInfoJson = MakeShareable(new FJsonObject);
 
 	AUTBaseGameMode* BaseGameMode;
 	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 
+	AUTLobbyGameMode* LobbyGameMode;
+	LobbyGameMode = GWorld->GetAuthGameMode<AUTLobbyGameMode>();
+
+	AUTGameMode* UTGameMode;
+	UTGameMode = Cast<AUTGameMode>(GWorld->GetAuthGameMode());
+
+	bool isLobbyData = BaseGameMode && BaseGameMode->IsLobbyServer() && LobbyGameMode;
+	bool isDediData = BaseGameMode && !BaseGameMode->IsLobbyServer() && UTGameMode;
+
 	if (BaseGameMode) {
 
-		if (BaseGameMode->IsLobbyServer())
-		{
-			AUTLobbyGameMode* LobbyGameMode;
-			LobbyGameMode = GWorld->GetAuthGameMode<AUTLobbyGameMode>();
-			JsonObject->SetBoolField(TEXT("IsLobbyServer"), true);
+		ServerInfoJson->SetBoolField(TEXT("IsLobbyServer"), isLobbyData);
 
-			if (LobbyGameMode)
-			{
-				TSharedPtr<FJsonObject> LobbyInfoJson = MakeShareable(new FJsonObject);
-				LobbyInfoJson->SetBoolField(TEXT("IsPassworded"), LobbyGameMode->LobbyPassword.IsEmpty());
-				LobbyInfoJson->SetNumberField(TEXT("NumPlayers"), LobbyGameMode->GetNumPlayers());
-				LobbyInfoJson->SetNumberField(TEXT("NumMatches"), LobbyGameMode->GetNumMatches());
-				AUTLobbyGameState* UTLobbyGameState = LobbyGameMode->UTLobbyGameState;
+		if (isLobbyData) {
+			ServerInfoJson->SetBoolField(TEXT("IsPassworded"), LobbyGameMode->LobbyPassword.IsEmpty());
+			ServerInfoJson->SetNumberField(TEXT("NumPlayers"), LobbyGameMode->GetNumPlayers());
+			ServerInfoJson->SetNumberField(TEXT("NumMatches"), LobbyGameMode->GetNumMatches());
+		}
+		else if (isDediData) {
+			ServerInfoJson->SetBoolField(TEXT("IsPassworded"), UTGameMode->ServerPassword.IsEmpty());
+			ServerInfoJson->SetNumberField(TEXT("NumPlayers"), UTGameMode->GetNumPlayers());
+			ServerInfoJson->SetNumberField(TEXT("NumMatches"), 1);
+		}
 
-				TArray<TSharedPtr<FJsonValue>> GameInstancesJson;
 
-				if (UTLobbyGameState) {
-					for (int32 i = 0; i < UTLobbyGameState->GameInstances.Num(); i++)
-					{
-						TSharedPtr<FJsonObject> MatchJson = GetLobbyMatchInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, UTLobbyGameState->GameInstances[i].InstancePort);
-						GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
-					}
+		TArray<TSharedPtr<FJsonValue>> GameInstancesJson;
+
+		// one or multiple instances for lobby instanced servers
+		if (isLobbyData) {
+			AUTLobbyGameState* UTLobbyGameState = LobbyGameMode->UTLobbyGameState;
+
+			if (UTLobbyGameState) {
+				for (int32 i = 0; i < UTLobbyGameState->GameInstances.Num(); i++)
+				{
+					TSharedPtr<FJsonObject> MatchJson = GetInstanceInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, NULL);
+					MatchJson->SetNumberField("InstancePort", UTLobbyGameState->GameInstances[i].InstancePort);
+					MatchJson->SetBoolField("IsDataFromDedi", false);
+					GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 				}
-
-				LobbyInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
-
-
-				JsonObject->SetObjectField(TEXT("ServerInfo"), LobbyInfoJson);
 			}
 		}
-		// Either dedicated server or lobby instanced servers
-		else {
-			JsonObject->SetBoolField(TEXT("IsLobbyServer"), false);
-
-			AUTGameMode* UTGameMode = Cast<AUTGameMode>(GWorld->GetAuthGameMode());
-
-			if (UTGameMode) {
-				TSharedPtr<FJsonObject> DediInfoJson = MakeShareable(new FJsonObject);
-				DediInfoJson->SetBoolField(TEXT("IsPassworded"), UTGameMode->ServerPassword.IsEmpty());
-				DediInfoJson->SetNumberField(TEXT("NumPlayers"), UTGameMode->GetNumPlayers());
-				DediInfoJson->SetNumberField(TEXT("NumMatches"), 1);
-
-				TArray<TSharedPtr<FJsonValue>> GameInstancesJson;
-				TSharedPtr<FJsonObject> MatchJson = GetDediMatchInfoJSON(UTGameMode);
-				GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
-
-				DediInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
-
-				JsonObject->SetObjectField(TEXT("ServerInfo"), DediInfoJson);
-			}
+		// always one instance for dedi server
+		else if (isDediData) {
+			TSharedPtr<FJsonObject> MatchJson = GetInstanceInfoJSON(NULL, UTGameMode);
+			MatchJson->SetNumberField("InstancePort", 0); // FIXME
+			MatchJson->SetBoolField("IsDataFromDedi", true);
+			GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 		}
+
+		ServerInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
 	}
 
 
-	return JsonObject;
+	return ServerInfoJson;
 }
