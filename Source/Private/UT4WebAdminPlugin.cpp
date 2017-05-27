@@ -25,8 +25,7 @@ void FUT4WebAdminPlugin::StartupModule()
 
 void FUT4WebAdminPlugin::ShutdownModule()
 {
-	_WebAdmin->Stop();
+	if (_WebAdmin) {
+		_WebAdmin->Stop();
+	}
 }
-
-
-
