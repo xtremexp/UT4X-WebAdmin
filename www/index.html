@@ -42,17 +42,17 @@
 							<!-- Less info and less reliable data since it's partial data and replicated from instanced server to lobby -->
 							<div class="panel panel-primary">
 							  <div class="panel-heading">
-								<h3 class="panel-title">{{lobbyInstance.ServerName}} - {{lobbyInstance.Ruleset.Title}} - {{lobbyInstance.MatchState}} - {{lobbyInstance.NumPlayers}} / {{lobbyInstance.MaxPlayers}} player(s)</h3>
+								<h3 class="panel-title">{{lobbyInstance.ServerName}} - {{lobbyInstance.GameInfo.Title}} - {{lobbyInstance.MatchState}} - {{lobbyInstance.NumPlayers}} / {{lobbyInstance.MaxPlayers}} player(s)</h3>
 							  </div>
 							  <div class="panel-body">
 								<div>
 									<div class="row">
 									  <div class="col-sm-6 col-md-4">
 										<div class="thumbnail">
-										  <img ng-src="/img/maps/{{lobbyInstance.Map.MapAssetName}}.png">
+										  <img ng-src="/img/maps/{{lobbyInstance.Map.MapAssetName}}.png" ng-attr-title="{{lobbyInstance.Map.Description}}">
 										  <div class="caption">
 											<h3>{{lobbyInstance.Map.Title}}</h3>
-											<p>{{lobbyInstance.Map.Author}}</p>
+											<p>by {{lobbyInstance.Map.Author}}</p>
 											Switch to:
 											<select>
 												<!-- TODO red background color if map is not from epic and has no redirectUrl set -->
@@ -81,7 +81,9 @@
 												<th>Score</th>
 												<th ng-if="lobbyInstance.IsDataFromDedi">K</th>
 												<th ng-if="lobbyInstance.IsDataFromDedi">D</th>
+												<th ng-if="lobbyInstance.IsDataFromDedi" alt="Damage Done">Dmg</th>
 												<th ng-if="lobbyInstance.IsDataFromDedi">Ping</th>
+												<th ng-if="lobbyInstance.IsDataFromDedi">Rank</th>
 												<th>XP</th>
 												<th>Spec?</th>
 												<th>Action</th>
@@ -92,12 +94,17 @@
 												ng-class="{ 'redTeam': (player.TeamNum == 0 && !player.bIsSpectator), 'blueTeam': (player.TeamNum == 1 && !player.bIsSpectator )}"
 												>
 												<td>{{player.PlayerName}}</td>
-												<td><span ng-if="!player.bIsABot">{{player.UniqueId}}</span></td>
+												<td><p ng-if="!player.bIsABot" class="overflow-ellipsis-small">{{player.UniqueId}}</p></td>
 												<td>{{player.SavedNetworkAddress}}</td>
 												<td class="textRight">{{player.PlayerScore}}</td>
 												<td class="textRight" ng-if="lobbyInstance.IsDataFromDedi">{{player.Kills}}</td>
 												<td class="textRight" ng-if="lobbyInstance.IsDataFromDedi">{{player.Deaths}}</td>
+												<td class="textRight" ng-if="lobbyInstance.IsDataFromDedi">{{player.DamageDone}}</td>
 												<th class="textRight" ng-if="lobbyInstance.IsDataFromDedi"><span ng-if="!player.bIsABot">{{player.Ping}}</span></th>
+												<td class="textRight" ng-if="lobbyInstance.IsDataFromDedi" ng-class="{ 'greenBadge': (player.BadgeLevel == 0), 'bronzeBadge': (player.BadgeLevel == 1), 'silverBadge': (player.BadgeLevel == 2), 'goldBadge': (player.BadgeLevel == 3)}">
+													<!-- levels starts at 0 but always displayed +1 in ut -->
+													{{player.BadgeSubLevel + 1}}
+												</td>
 												<td class="textRight"><span ng-if="!player.bIsABot">{{player.XPLevel}}</span></td>
 												<td><span ng-if="player.bIsSpectator">X</span></td>
 												<td>

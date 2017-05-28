@@ -8,3 +8,5 @@
 #include "UTLobbyGameMode.h"
 #include "UTLobbyMatchInfo.h"
 #include "UTLobbyPlayerState.h"
+#include "UTLevelSummary.h"
+#include "UTGameEngine.h"

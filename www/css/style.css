@@ -71,3 +71,31 @@ button {
 .panel-primary>.panel-heading {
 	background-image: linear-gradient(to bottom,#333333 0,#212223 100%) !important;
 }
+
+.greenBadge {
+	color: #76ff76;
+}
+
+.bronzeBadge {
+	color: #e8ad00;
+}
+
+.goldBadge {
+	color: yellow;
+}
+
+.silverBadge {
+	color: #c7c7c7;
+}
+
+
+.overflow-ellipsis-small {
+  width: 100px;  
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
+

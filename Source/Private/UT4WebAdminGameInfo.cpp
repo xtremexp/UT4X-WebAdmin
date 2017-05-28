@@ -50,7 +50,8 @@ TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapI
 		MapInfoJson->SetStringField(TEXT("Description"), MapInfo->Description);
 		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), MapInfo->MapScreenshotReference);
 		MapInfoJson->SetStringField(TEXT("RedirectPackageName"), MapInfo->Redirect.PackageName);
-		MapInfoJson->SetStringField(TEXT("RedirectPackageURL"), MapInfo->Redirect.PackageURL);
+		MapInfoJson->SetStringField(TEXT("RedirectPackageFullURL"), MapInfo->Redirect.ToString());
+		MapInfoJson->SetStringField(TEXT("RedirectPackageChecksum"), MapInfo->Redirect.PackageChecksum);
 		MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), MapInfo->OptimalPlayerCount);
 		MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), MapInfo->OptimalTeamPlayerCount);
 	}
@@ -93,6 +94,8 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		InstanceInfoJson->SetBoolField(TEXT("bTeamGame"), MatchUpdate->TeamScores.Num() > 0);
 
 		InstanceInfoJson->SetStringField(TEXT("MatchState"), MatchUpdate->MatchState.ToString());
+
+		// TODO add team scores if team game
 	}
 	// Data from dedi or instanced lobby server
 	else if(UTGameMode) {
@@ -118,6 +121,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 
 			InstanceInfoJson->SetStringField(TEXT("MatchState"), UTGameMode->GetMatchState().ToString());
 		}
+		// TODO add team scores if team game
 	}
 
 	TArray<TSharedPtr<FJsonValue>> PlayersJson;
@@ -169,6 +173,17 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 				PlayerJson->SetNumberField(TEXT("LastActiveTime"), UTPlayerState->LastActiveTime);
 				PlayerJson->SetNumberField(TEXT("Ping"), UTPlayerState->Ping);
 				PlayerJson->SetStringField(TEXT("SavedNetworkAddress"), UTPlayerState->SavedNetworkAddress);
+				PlayerJson->SetBoolField(TEXT("bIsMuted"), UTPlayerState->bIsMuted);
+				PlayerJson->SetBoolField(TEXT("bIsInactive"), UTPlayerState->bIsInactive);
+				PlayerJson->SetBoolField(TEXT("bIsMatchHost"), UTPlayerState->bIsMatchHost);
+				PlayerJson->SetNumberField(TEXT("RemainingLives"), UTPlayerState->RemainingLives);
+				PlayerJson->SetStringField(TEXT("PartyLeader"), UTPlayerState->PartyLeader);
+
+				int32 BadgeLevel = 0;
+				int32 BadgeSubLevel = 0;
+				UTPlayerState->GetBadgeFromELO(UTGameMode, UTGameMode->bRankedSession, BadgeLevel, BadgeSubLevel);
+				PlayerJson->SetNumberField(TEXT("BadgeLevel"), BadgeLevel);
+				PlayerJson->SetNumberField(TEXT("BadgeSubLevel"), BadgeSubLevel);
 
 				PlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
 			}
@@ -178,16 +193,51 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 	InstanceInfoJson->SetArrayField(TEXT("Players"), PlayersJson);
 
 	// Map Played
-	TSharedPtr<FJsonObject> MapInfoJson = NULL;
+	TSharedPtr<FJsonObject> MapInfoJson = MakeShareable(new FJsonObject);
 
 	// Current map being played
 	if (LobbyMatchInfo) {
 		MapInfoJson = GetMapInfoJSON(LobbyMatchInfo->InitialMapInfo);
 	}
 	else if (UTGameMode && UTGameState) {
-		// TODO get map info for dedi
-		MapInfoJson = MakeShareable(new FJsonObject); //GetMapInfoJSON(LobbyMatchInfo->InitialMapInfo);
+
+		AUTReplicatedMapInfo* CurrentMapInfoReplicated = NULL;
+		FString currentMapName = GWorld->GetMapName();
+
+		// Get current map info from map vote list
+		for (int32 Idx = 0; Idx < UTGameState->MapVoteList.Num(); Idx++)
+		{
+			if (UTGameState->MapVoteList[Idx] && UTGameState->MapVoteList[Idx]->MapAssetName == currentMapName) {
+				CurrentMapInfoReplicated = UTGameState->MapVoteList[Idx];
+				break;
+			}
+		}
+
+		if (CurrentMapInfoReplicated) {
+			MapInfoJson = GetMapInfoJSON(CurrentMapInfoReplicated);
+		}
+		// map not in map list have to load level to get data
+		else {
+			// TODO cache ? perf might be bad
+			UUTGameEngine* UTGameEngine = Cast<UUTGameEngine>(GEngine);
+
+			if (UTGameEngine && !GWorld->GetMapName().IsEmpty()) {
+				UUTLevelSummary* LevelSummary = UTGameEngine->LoadLevelSummary(GWorld->GetMapName());
+				if (LevelSummary) {
+					MapInfoJson->SetStringField(TEXT("Author"), LevelSummary->Author);
+					MapInfoJson->SetStringField(TEXT("Title"), LevelSummary->Title);
+					MapInfoJson->SetStringField(TEXT("Description"), LevelSummary->Description.ToString());
+					MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), LevelSummary->OptimalPlayerCount);
+					MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), LevelSummary->OptimalTeamPlayerCount);
+					MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), LevelSummary->OptimalTeamPlayerCount);
+					// TODO missing redirect info
+				}
+			}
+		}
 	}
+	/*
+	
+	*/
 
 	InstanceInfoJson->SetObjectField(TEXT("Map"), MapInfoJson);
 
@@ -216,10 +266,30 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 
 	InstanceInfoJson->SetArrayField(TEXT("MapList"), MapInfosJson);
 
-	// TODO ruleset for lobby
-	//TSharedPtr<FJsonObject> CurrentRulesetJson = GetGameRulesetJSON(AvailableMatch->CurrentRuleset);
-	//MatchJson->SetObjectField(TEXT("Ruleset"), CurrentRulesetJson);
+	// Game Info being played - Rulet for lobby game mode info for dedi
+	TSharedPtr<FJsonObject> GameInfoJson = MakeShareable(new FJsonObject);
 
+	if (LobbyMatchInfo) {
+
+		TWeakObjectPtr<AUTReplicatedGameRuleset> GameRuleset = LobbyMatchInfo->CurrentRuleset;
+
+		if (GameRuleset != NULL) {
+			GameInfoJson->SetStringField(TEXT("Title"), GameRuleset->Title);
+			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
+		}
+	}
+	else if (UTGameMode && UTGameState) {
+		AGameSession * GameSession = UTGameMode->GameSession;
+		GameInfoJson->SetStringField(TEXT("Title"), UTGameMode->DisplayName.ToString());
+
+		if (UTGameMode->GameSession) {
+			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), UTGameMode->GameSession->MaxPlayers);
+
+		}
+		
+	}
+
+	InstanceInfoJson->SetObjectField(TEXT("GameInfo"), GameInfoJson);
 
 	return InstanceInfoJson;
 }
