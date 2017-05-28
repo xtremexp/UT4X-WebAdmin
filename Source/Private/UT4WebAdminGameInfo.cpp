@@ -102,7 +102,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		InstanceInfoJson->SetNumberField(TEXT("bPrivateMatch"), UTGameMode->bPrivateMatch);
 		InstanceInfoJson->SetNumberField(TEXT("bRankLocked"), UTGameMode->bRankLocked);
 		InstanceInfoJson->SetNumberField(TEXT("NumPlayers"), UTGameMode->GetNumPlayers());
-		InstanceInfoJson->SetNumberField(TEXT("NumSpectators"), 0);
+		InstanceInfoJson->SetNumberField(TEXT("NumSpectators"), UTGameMode->GetNumSpectators());
 		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), UTGameMode->DefaultMaxPlayers);
 
 		if (UTGameState) {
@@ -230,7 +230,6 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 					MapInfoJson->SetStringField(TEXT("Description"), LevelSummary->Description.ToString());
 					MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), LevelSummary->OptimalPlayerCount);
 					MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), LevelSummary->OptimalTeamPlayerCount);
-					MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), LevelSummary->OptimalTeamPlayerCount);
 					// TODO missing redirect info
 				}
 			}
@@ -248,6 +247,8 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 
 	if (LobbyMatchInfo) {
 		TWeakObjectPtr<AUTReplicatedGameRuleset> GameRuleset = LobbyMatchInfo->CurrentRuleset;
+		// This is map list for current ruleset - It might not contains all maps for current gametype
+		// allow switch to any map?
 		if (GameRuleset != NULL) {
 			for (int32 MapIdx = 0; MapIdx < GameRuleset->MapList.Num(); MapIdx++)
 			{
@@ -255,11 +256,14 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 			}
 		}
+		else {
+			// TODO if player has created a custom game then map list is empty !
+		}
 	}
 	else if (UTGameMode && UTGameState) {
-		for (int32 Idx = 0; Idx < UTGameState->MapVoteList.Num(); Idx++)
+		for (int32 MapIdx = 0; MapIdx < UTGameState->MapVoteList.Num(); MapIdx++)
 		{
-			AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[Idx];
+			AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[MapIdx];
 			TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
 			MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 		}
