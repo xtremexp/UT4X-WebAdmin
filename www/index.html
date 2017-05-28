@@ -49,24 +49,24 @@
 									<div class="row">
 									  <div class="col-sm-6 col-md-4">
 										<div class="thumbnail">
-										  <img ng-src="/img/maps/{{lobbyInstance.Map.MapAssetName}}.png" ng-attr-title="{{lobbyInstance.Map.Description}}">
+										  <img ng-src="/img/maps/{{lobbyInstance.selectedMap.MapAssetName}}.png" ng-attr-title="{{lobbyInstance.selectedMap.Description}}">
 										  <div class="caption">
-											<h3>{{lobbyInstance.Map.Title}}</h3>
-											<p>by {{lobbyInstance.Map.Author}}</p>
+											<h3>{{lobbyInstance.selectedMap.Title}}</h3>
+											<p>by {{lobbyInstance.selectedMap.Author}}</p>
 											Switch to:
-											<select>
-												<!-- TODO red background color if map is not from epic and has no redirectUrl set -->
-												<option ng-repeat="mapInfo in lobbyInstance.MapList">{{mapInfo.MapAssetName}}</option>
-											</select>
-											
+											<!-- TODO red background color if map is not from epic and has no redirectUrl set -->
+											<select ng-options="map as map.MapAssetName for map in lobbyInstance.MapList | orderBy:'MapAssetName' track by map.MapAssetName" ng-model="lobbyInstance.selectedMap"></select>
+											<button>GO</button>
 										  </div>
 										</div>
 									  </div>
 										<div>
-											<h1>Time: {{toMinutesSec(lobbyInstance.ElapsedTime)}} / {{toMinutesSec(lobbyInstance.TimeLimit)}}</h1>
-										</div>
-										<div ng-if="lobbyInstance.GoalScore > 0">
-											<h1>Goal Score: {{lobbyInstance.GoalScore}}</h1>
+											<div>
+												<h1>Time: {{toMinutesSec(lobbyInstance.ElapsedTime)}} / {{toMinutesSec(lobbyInstance.TimeLimit)}}</h1>
+											</div>
+											<div ng-if="lobbyInstance.GoalScore > 0">
+												<h1>Goal Score: {{lobbyInstance.GoalScore}}</h1>
+											</div>
 										</div>
 									</div>
 									<hr>
@@ -91,7 +91,7 @@
 										</thead>
 										<tbody>
 											<tr ng-repeat="player in lobbyInstance.Players"
-												ng-class="{ 'redTeam': (player.TeamNum == 0 && !player.bIsSpectator), 'blueTeam': (player.TeamNum == 1 && !player.bIsSpectator )}"
+												ng-class="{ 'redTeam': (player.TeamNum == 0), 'blueTeam': (player.TeamNum == 1), 'specTeam': player.bIsSpectator }"
 												>
 												<td>{{player.PlayerName}}</td>
 												<td><p ng-if="!player.bIsABot" class="overflow-ellipsis-small">{{player.UniqueId}}</p></td>

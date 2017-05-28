@@ -10,6 +10,11 @@
 	background-color: rgb(193, 91, 95);
 }
 
+.specTeam {
+	background-color: white;
+	color: black;
+}
+
 .textRight {
 	text-align: right;
 }

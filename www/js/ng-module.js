@@ -90,8 +90,17 @@ var ut4waApp = angular.module('ut4waApp', [])
 		
 		for(var i=0; i<$scope.GameInstances.length; i++){
 			
+			var GameInstance = $scope.GameInstances[i];
+			
+			for(var j=0; j<GameInstance.MapList.length; j++){
+				if(GameInstance.MapList[j].MapAssetName == GameInstance.Map.MapAssetName){
+					GameInstance.selectedMap = GameInstance.MapList[j];
+					break;
+				}
+			}
+			
 			if(response.data.IsLobbyServer){
-				var dediHttpGameInfoUrl = getGameInstanceHttpUrl($scope.GameInstances[i]) + '/gameinfo';
+				var dediHttpGameInfoUrl = getGameInstanceHttpUrl(GameInstance) + '/gameinfo';
 				if(isDebug){
 					dediHttpGameInfoUrl = 'http://localhost:8080/js/gameinfo-dedi-test.json';
 				}
