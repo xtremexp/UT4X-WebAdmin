@@ -171,7 +171,8 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 				PlayerJson->SetStringField(TEXT("CountryFlag"), UTPlayerState->CountryFlag.ToString());
 				PlayerJson->SetStringField(TEXT("EpicAccountName"), UTPlayerState->EpicAccountName);
 				PlayerJson->SetNumberField(TEXT("LastActiveTime"), UTPlayerState->LastActiveTime);
-				PlayerJson->SetNumberField(TEXT("Ping"), UTPlayerState->Ping);
+				// Exact ping as float (rounded and compressed in replicated UTPlayerState->Ping) as seen in PlayerState.h
+				PlayerJson->SetNumberField(TEXT("Ping"), (int32) UTPlayerState->ExactPing);
 				PlayerJson->SetStringField(TEXT("SavedNetworkAddress"), UTPlayerState->SavedNetworkAddress);
 				PlayerJson->SetBoolField(TEXT("bIsMuted"), UTPlayerState->bIsMuted);
 				PlayerJson->SetBoolField(TEXT("bIsInactive"), UTPlayerState->bIsInactive);
