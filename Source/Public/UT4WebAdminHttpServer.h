@@ -7,7 +7,7 @@
 #include "UTLobbyGameMode.h"
 #include "UT4WebAdminUtils.h"
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
-#include <io.h>
+#include <io.h> // only work on windows FIX ME Linux
 #include <fcntl.h>
 
 #include "UT4WebAdminHttpServer.generated.h"

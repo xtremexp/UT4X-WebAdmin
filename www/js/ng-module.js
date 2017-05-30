@@ -92,11 +92,19 @@ var ut4waApp = angular.module('ut4waApp', [])
 			
 			var GameInstance = $scope.GameInstances[i];
 			
-			for(var j=0; j<GameInstance.MapList.length; j++){
+			var mapFoundInMapList = false;
+			
+			// try found map from map list
+			for(var j = 0; j < GameInstance.MapList.length; j++){
 				if(GameInstance.MapList[j].MapAssetName == GameInstance.Map.MapAssetName){
 					GameInstance.selectedMap = GameInstance.MapList[j];
+					mapFoundInMapList = true;
 					break;
 				}
+			}
+			
+			if(!mapFoundInMapList){
+				GameInstance.selectedMap = GameInstance.Map;
 			}
 			
 			if(response.data.IsLobbyServer){

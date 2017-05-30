@@ -35,6 +35,61 @@ TSharedPtr<FJsonObject> GetGameRulesetJSON(TWeakObjectPtr<AUTReplicatedGameRules
 	return RulesetJson;
 }
 
+TSharedPtr<FJsonObject> GetMapAssetJSON(const FAssetData& MapAsset)
+{
+	TSharedPtr<FJsonObject> MapInfoJson = MakeShareable(new FJsonObject);
+
+	if (MapAsset != NULL) {
+		FText LocDesc = FText::GetEmpty();
+		
+		static FName NAME_MapInfo_MapFileSize(TEXT("MapFileSize"));
+
+		const FString* Title = MapAsset.TagsAndValues.Find(NAME_MapInfo_Title);
+		const FString* Author = MapAsset.TagsAndValues.Find(NAME_MapInfo_Author);
+		const FString* Screenshot = MapAsset.TagsAndValues.Find(NAME_MapInfo_ScreenshotReference);
+		const FString* Description = MapAsset.TagsAndValues.Find(NAME_MapInfo_Description);
+		const FString* MapScreenShotReference = MapAsset.TagsAndValues.Find(NAME_MapInfo_ScreenshotReference);
+		const FString* OptimalPlayerCountStr = MapAsset.TagsAndValues.Find(NAME_MapInfo_OptimalPlayerCount);
+		const FString* OptimalTeamPlayerCountStr = MapAsset.TagsAndValues.Find(NAME_MapInfo_OptimalTeamPlayerCount);
+		const FString* MapFileSize = MapAsset.TagsAndValues.Find(NAME_MapInfo_MapFileSize);
+
+		int32 OptimalPlayerCount = 6;
+		if (OptimalPlayerCountStr != NULL)
+		{
+			OptimalPlayerCount = FCString::Atoi(**OptimalPlayerCountStr);
+		}
+
+		int32 OptimalTeamPlayerCount = 10;
+		if (OptimalTeamPlayerCountStr != NULL)
+		{
+			OptimalTeamPlayerCount = FCString::Atoi(**OptimalTeamPlayerCountStr);
+		}
+
+		if (Description != nullptr)
+		{
+			FTextStringHelper::ReadFromString(**Description, LocDesc);
+		}
+
+		MapInfoJson->SetStringField(TEXT("Title"), (Title != NULL && !Title->IsEmpty()) ? *Title : *MapAsset.AssetName.ToString());
+		MapInfoJson->SetStringField(TEXT("Author"), (Author != NULL) ? *Author : FString());
+		MapInfoJson->SetStringField(TEXT("MapPackageName"), MapAsset.PackageName.ToString());
+		MapInfoJson->SetStringField(TEXT("MapAssetName"), MapAsset.AssetName.ToString());
+		MapInfoJson->SetStringField(TEXT("Description"), (!LocDesc.IsEmpty()) ? LocDesc.ToString() : FString());
+		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), (Screenshot != NULL) ? *Screenshot : FString());
+		MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), OptimalPlayerCount);
+		MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), OptimalTeamPlayerCount);
+		MapInfoJson->SetStringField(TEXT("MapFileSize"), *MapFileSize); // might be useful for user to choose a small map for faster download ...
+		// FIX ME get redirect info
+		/*
+		MapInfoJson->SetStringField(TEXT("RedirectPackageName"), MapInfo->Redirect.PackageName);
+		MapInfoJson->SetStringField(TEXT("RedirectPackageFullURL"), MapInfo->Redirect.ToString());
+		MapInfoJson->SetStringField(TEXT("RedirectPackageChecksum"), MapInfo->Redirect.PackageChecksum);
+		*/
+
+	}
+
+	return MapInfoJson;
+}
 
 
 // FRemotePlayerInfo
@@ -42,6 +97,7 @@ TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapI
 {
 	TSharedPtr<FJsonObject> MapInfoJson = MakeShareable(new FJsonObject);
 
+	// Info from map list from lobby
 	if (MapInfo != NULL) {
 		MapInfoJson->SetStringField(TEXT("Title"), MapInfo->Title);
 		MapInfoJson->SetStringField(TEXT("Author"), MapInfo->Author);
@@ -49,11 +105,12 @@ TSharedPtr<FJsonObject> GetMapInfoJSON(TWeakObjectPtr<AUTReplicatedMapInfo> MapI
 		MapInfoJson->SetStringField(TEXT("MapAssetName"), MapInfo->MapAssetName);
 		MapInfoJson->SetStringField(TEXT("Description"), MapInfo->Description);
 		MapInfoJson->SetStringField(TEXT("MapScreenshotReference"), MapInfo->MapScreenshotReference);
+		MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), MapInfo->OptimalPlayerCount);
+		MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), MapInfo->OptimalTeamPlayerCount);
+
 		MapInfoJson->SetStringField(TEXT("RedirectPackageName"), MapInfo->Redirect.PackageName);
 		MapInfoJson->SetStringField(TEXT("RedirectPackageFullURL"), MapInfo->Redirect.ToString());
 		MapInfoJson->SetStringField(TEXT("RedirectPackageChecksum"), MapInfo->Redirect.PackageChecksum);
-		MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), MapInfo->OptimalPlayerCount);
-		MapInfoJson->SetNumberField(TEXT("OptimalTeamPlayerCount"), MapInfo->OptimalTeamPlayerCount);
 	}
 
 	return MapInfoJson;
@@ -76,7 +133,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		InstanceInfoJson->SetNumberField(TEXT("bRankLocked"), LobbyMatchInfo->bRankLocked);
 		InstanceInfoJson->SetNumberField(TEXT("NumPlayers"), LobbyMatchInfo->NumPlayersInMatch());
 		InstanceInfoJson->SetNumberField(TEXT("NumSpectators"), LobbyMatchInfo->NumSpectatorsInMatch());
-		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), 0);
+		InstanceInfoJson->SetNumberField(TEXT("MaxPlayers"), LobbyMatchInfo->DedicatedServerMaxPlayers);
 
 		InstanceInfoJson->SetStringField(TEXT("ServerInstanceGUID"), LobbyMatchInfo->GameInstanceGUID);
 		InstanceInfoJson->SetStringField(TEXT("ServerName"), LobbyMatchInfo->CustomGameName);
@@ -261,11 +318,35 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		}
 	}
 	else if (UTGameMode && UTGameState) {
-		for (int32 MapIdx = 0; MapIdx < UTGameState->MapVoteList.Num(); MapIdx++)
-		{
-			AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[MapIdx];
-			TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
-			MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
+		// no mapvote list for dedi?
+		// Adapted from UTGameMode.PrepareMapVote()
+		if (UTGameState->MapVoteList.Num() == 0) {
+			TArray<FString> MapPrefixList;
+			MapPrefixList.Add(UTGameMode->GetMapPrefix());
+			TArray<FAssetData> AllMaps;
+			TArray<FString> MapList;
+
+			UTGameState->ScanForMaps(MapPrefixList, AllMaps);
+
+			// Now, go through all of the maps 
+			// TODO cache
+			for (const FAssetData& MapAsset : AllMaps)
+			{
+				FString PackageName = MapAsset.PackageName.ToString();
+				const FString* Title = MapAsset.TagsAndValues.Find(NAME_MapInfo_Title);
+				const FString* Screenshot = MapAsset.TagsAndValues.Find(NAME_MapInfo_ScreenshotReference);
+
+				TSharedPtr<FJsonObject> MapInfoJson = GetMapAssetJSON(MapAsset);
+				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
+			}
+		}
+		else {
+			for (int32 MapIdx = 0; MapIdx < UTGameState->MapVoteList.Num(); MapIdx++)
+			{
+				AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[MapIdx];
+				TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
+				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
+			}
 		}
 	}
 
@@ -289,7 +370,6 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 
 		if (UTGameMode->GameSession) {
 			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), UTGameMode->GameSession->MaxPlayers);
-
 		}
 		
 	}
@@ -344,7 +424,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 					TSharedPtr<FJsonObject> MatchJson = GetInstanceInfoJSON(UTLobbyGameState->GameInstances[i].MatchInfo, NULL);
 					MatchJson->SetNumberField("InstancePort", UTLobbyGameState->GameInstances[i].InstancePort);
 					MatchJson->SetBoolField("IsDataFromDedi", false);
-					//GameInstanceGUID
+
 					GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 				}
 			}
@@ -354,6 +434,7 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 			TSharedPtr<FJsonObject> MatchJson = GetInstanceInfoJSON(NULL, UTGameMode);
 			MatchJson->SetNumberField("InstancePort", 0); // FIXME
 			MatchJson->SetBoolField("IsDataFromDedi", true);
+
 			GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
 		}
 
