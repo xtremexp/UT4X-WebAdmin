@@ -283,6 +283,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 				UUTLevelSummary* LevelSummary = UTGameEngine->LoadLevelSummary(GWorld->GetMapName());
 				if (LevelSummary) {
 					MapInfoJson->SetStringField(TEXT("Author"), LevelSummary->Author);
+					MapInfoJson->SetStringField(TEXT("MapAssetName"), GWorld->GetMapName());
 					MapInfoJson->SetStringField(TEXT("Title"), LevelSummary->Title);
 					MapInfoJson->SetStringField(TEXT("Description"), LevelSummary->Description.ToString());
 					MapInfoJson->SetNumberField(TEXT("OptimalPlayerCount"), LevelSummary->OptimalPlayerCount);
