@@ -375,9 +375,70 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		
 	}
 
+	// Mutators being used in current session
+	if (UTGameMode && UTGameState) {
+
+		TArray<TSharedPtr<FJsonValue>> MutatorsInfoJson;
+		AUTMutator* NextMutator = UTGameMode->BaseMutator;
+
+
+		while (NextMutator != NULL)
+		{
+			TSharedPtr<FJsonObject> MutatorInfoJson = MakeShareable(new FJsonObject);
+			MutatorInfoJson->SetStringField(TEXT("DisplayName"), NextMutator->DisplayName.ToString());
+			MutatorInfoJson->SetStringField(TEXT("Author"), NextMutator->Author.ToString());
+			MutatorsInfoJson.Add(MakeShareable(new FJsonValueObject(MutatorInfoJson)));
+		}
+
+		InstanceInfoJson->SetArrayField(TEXT("Mutators"), MutatorsInfoJson);
+	}
+
+
+	// Available mutators and gametypes
+	// FIXME crashing for unknown reason (?)
+	/*
+	if (UTGameMode && UTGameState) {
+
+		TArray<TSharedPtr<FJsonValue>> MutatorsAvailableJson;
+		TArray<UClass*> MutatorListAvailable;
+		TArray<UClass*> AllGametypes;
+		UTGameState->GetAvailableGameData(AllGametypes, MutatorListAvailable);
+
+		for (UClass* MutClass : MutatorListAvailable)
+		{
+			const AUTMutator* Mutator = MutClass->GetDefaultObject<AUTMutator>();
+			TSharedPtr<FJsonObject> MutatorAvailableJson = MakeShareable(new FJsonObject);
+			MutatorAvailableJson->SetStringField(TEXT("DisplayName"), Mutator->DisplayName.ToString());
+			MutatorAvailableJson->SetStringField(TEXT("Author"), Mutator->Author.ToString());
+			MutatorAvailableJson->SetStringField(TEXT("Description"), Mutator->Description.ToString());
+
+			MutatorsAvailableJson.Add(MakeShareable(new FJsonValueObject(MutatorAvailableJson)));
+		}
+
+		InstanceInfoJson->SetArrayField(TEXT("MutatorsAvailable"), MutatorsAvailableJson);
+		TArray<TSharedPtr<FJsonValue>> GametypesAvailableJson;
+
+		for (UClass* GametypeClass : AllGametypes)
+		{
+			TSharedPtr<FJsonObject> GametypeAvailable = MakeShareable(new FJsonObject);
+			GametypeAvailable->SetStringField(TEXT("DisplayName"), GametypeClass->GetName());
+
+			GametypesAvailableJson.Add(MakeShareable(new FJsonValueObject(GametypeAvailable)));
+		}
+
+		InstanceInfoJson->SetArrayField(TEXT("GametypesAvailable"), GametypesAvailableJson);
+	}
+	*/
+	
+
+	
+
 	InstanceInfoJson->SetObjectField(TEXT("GameInfo"), GameInfoJson);
 
-	return InstanceInfoJson;
+	TSharedPtr<FJsonObject> InstanceGlobalInfoJson = MakeShareable(new FJsonObject);
+	InstanceGlobalInfoJson->SetObjectField(TEXT("data"), InstanceInfoJson);
+
+	return InstanceGlobalInfoJson;
 }
 
 

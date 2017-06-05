@@ -10,3 +10,4 @@
 #include "UTLobbyPlayerState.h"
 #include "UTLevelSummary.h"
 #include "UTGameEngine.h"
+#include "UTMutator.h"
