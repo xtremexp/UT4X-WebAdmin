@@ -11,14 +11,14 @@ class FUT4WebAdminPlugin : public IModuleInterface
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	UUT4WebAdmin* _WebAdmin;
+	AUT4WebAdmin* _WebAdmin;
 };
 
 IMPLEMENT_MODULE(FUT4WebAdminPlugin, UT4WebAdmin)
 
 void FUT4WebAdminPlugin::StartupModule()
 {
-	_WebAdmin = NewObject<UUT4WebAdmin>();
+	_WebAdmin = NewObject<AUT4WebAdmin>();
 	_WebAdmin->Start();
 }
 

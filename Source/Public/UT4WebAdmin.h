@@ -5,6 +5,7 @@
 #include "UnrealTournament.h"
 #include "UTGameMode.h"
 #include "UTGameSession.h"
+#include "UTMutator.h"
 #include "UT4WebAdminHttpServer.h"
 
 #include "UT4WebAdmin.generated.h"
@@ -14,7 +15,7 @@ DEFINE_LOG_CATEGORY_STATIC(UT4WebAdmin, Log, All);
 
 
 UCLASS(Config=UT4WebAdmin)
-class UUT4WebAdmin : public UObject
+class AUT4WebAdmin : public AUTMutator
 {
 
 	GENERATED_UCLASS_BODY()
