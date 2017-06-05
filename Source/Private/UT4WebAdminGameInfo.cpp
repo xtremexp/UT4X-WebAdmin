@@ -15,7 +15,7 @@ TSharedPtr<FJsonObject> GetGameRulesetJSON(TWeakObjectPtr<AUTReplicatedGameRules
 		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
 		RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
 
-		TArray<TSharedPtr<FJsonValue>> MapListJson;
+		TArray<TSharedPtr<FJsonValue>> MapListJson; 
 		// maplist useful to know which map admin can switch to
 		for (int32 MapIdx = 0; MapIdx < GameRuleset->MapList.Num(); MapIdx++)
 		{
@@ -236,6 +236,8 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 				PlayerJson->SetBoolField(TEXT("bIsMatchHost"), UTPlayerState->bIsMatchHost);
 				PlayerJson->SetNumberField(TEXT("RemainingLives"), UTPlayerState->RemainingLives);
 				PlayerJson->SetStringField(TEXT("PartyLeader"), UTPlayerState->PartyLeader);
+				PlayerJson->SetBoolField(TEXT("bIsMatchHost"), UTPlayerState->bIsMatchHost);
+				PlayerJson->SetBoolField(TEXT("bIsWarmingUp"), UTPlayerState->bIsWarmingUp);
 
 				int32 BadgeLevel = 0;
 				int32 BadgeSubLevel = 0;
@@ -427,18 +429,14 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		}
 
 		InstanceInfoJson->SetArrayField(TEXT("GametypesAvailable"), GametypesAvailableJson);
-	}
-	*/
+	}*/
 	
 
 	
 
 	InstanceInfoJson->SetObjectField(TEXT("GameInfo"), GameInfoJson);
 
-	TSharedPtr<FJsonObject> InstanceGlobalInfoJson = MakeShareable(new FJsonObject);
-	InstanceGlobalInfoJson->SetObjectField(TEXT("data"), InstanceInfoJson);
-
-	return InstanceGlobalInfoJson;
+	return InstanceInfoJson;
 }
 
 
@@ -504,5 +502,8 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 	}
 
 
-	return ServerInfoJson;
+	TSharedPtr<FJsonObject> ServerGlobalInfoJson = MakeShareable(new FJsonObject);
+	ServerGlobalInfoJson->SetObjectField(TEXT("data"), ServerInfoJson);
+
+	return ServerGlobalInfoJson;
 }

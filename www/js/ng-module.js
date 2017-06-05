@@ -82,11 +82,11 @@ var ut4waApp = angular.module('ut4waApp', [])
 	$http.get(url).then(function(response) {
 		console.log(response.data);
         
-		$scope.DataFromLobby = response.data.IsLobbyServer;
-		$scope.DataFromDedi = !response.data.IsLobbyServer;
-		$scope.hasMatches = (response.data.NumMatches > 0);
+		$scope.DataFromLobby = response.data.data.IsLobbyServer;
+		$scope.DataFromDedi = !response.data.data.IsLobbyServer;
+		$scope.hasMatches = (response.data.data.NumMatches > 0);
 		
-		$scope.GameInstances = response.data.GameInstances;
+		$scope.GameInstances = response.data.data.GameInstances;
 		
 		for(var i=0; i<$scope.GameInstances.length; i++){
 			
@@ -117,8 +117,8 @@ var ut4waApp = angular.module('ut4waApp', [])
 				function(response2) {
 					$scope.GameInstances[0].Players = new Array();
 					$scope.GameInstances[0].IsDataFromDedi = true;
-					for(var j=0; j< response2.data.GameInstances[0].Players.length; j++){
-						$scope.GameInstances[0].Players.push(response2.data.GameInstances[0].Players[j]);
+					for(var j=0; j< response2.data.data.GameInstances[0].Players.length; j++){
+						$scope.GameInstances[0].Players.push(response2.data.data.GameInstances[0].Players[j]);
 					}
 				}, function(error){
 					console.log('Something bad happened');
