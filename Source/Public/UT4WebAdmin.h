@@ -13,8 +13,7 @@
 // Log messages
 DEFINE_LOG_CATEGORY_STATIC(UT4WebAdmin, Log, All);
 
-
-UCLASS(Config=UT4WebAdmin)
+UCLASS(Config=UT4WebAdmin, Blueprintable, Meta = (ChildCanTick))
 class AUT4WebAdmin : public AUTMutator
 {
 
@@ -35,8 +34,21 @@ class AUT4WebAdmin : public AUTMutator
 	UPROPERTY(Config)
 		bool bAnonymousAdmin;
 
+	/* Override for ticking/poll http server */
+	virtual void Tick(float DeltaTime) override;
+
 	// Reference to http server
 	UUT4WebAdminHttpServer* _HttpServer;
+
+	/* For chat history purpose */
+	bool AllowTextMessage_Implementation(FString& Msg, bool bIsTeamMessage, AUTBasePlayerController* Sender) override;
+
+	void PostPlayerInit_Implementation(AController* C) override;
+
+	/* For log player exit info */
+	void NotifyLogout_Implementation(AController* C) override;
+
+	void ModifyLogin_Implementation(UPARAM(ref) FString& Portal, UPARAM(ref) FString& Options) override;
 
 private:
 	AUTGameMode* GameMode;
