@@ -390,6 +390,8 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 			MutatorInfoJson->SetStringField(TEXT("DisplayName"), NextMutator->DisplayName.ToString());
 			MutatorInfoJson->SetStringField(TEXT("Author"), NextMutator->Author.ToString());
 			MutatorsInfoJson.Add(MakeShareable(new FJsonValueObject(MutatorInfoJson)));
+
+			NextMutator = NextMutator->NextMutator;
 		}
 
 		InstanceInfoJson->SetArrayField(TEXT("Mutators"), MutatorsInfoJson);
