@@ -14,6 +14,10 @@ void AUT4WebAdmin::Start()
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
 	
+	DisplayName = FText::FromString("UT4 WebAdmin 0.0.1a");
+	Author = FText::FromString("Thomas 'XtremeXp/Winter' P.");
+	Description = FText::FromString("Web administration mutator for Unreal Tournament 4 (2017) ");
+
 	_HttpServer = NewObject<UUT4WebAdminHttpServer>();
 }
 
