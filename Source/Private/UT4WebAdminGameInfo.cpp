@@ -389,6 +389,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 			TSharedPtr<FJsonObject> MutatorInfoJson = MakeShareable(new FJsonObject);
 			MutatorInfoJson->SetStringField(TEXT("DisplayName"), NextMutator->DisplayName.ToString());
 			MutatorInfoJson->SetStringField(TEXT("Author"), NextMutator->Author.ToString());
+			MutatorInfoJson->SetStringField(TEXT("Description"), NextMutator->Description.ToString());
 			MutatorsInfoJson.Add(MakeShareable(new FJsonValueObject(MutatorInfoJson)));
 
 			NextMutator = NextMutator->NextMutator;
@@ -498,6 +499,29 @@ TSharedPtr<FJsonObject> GetGameInfoJSON()
 			MatchJson->SetBoolField("IsDataFromDedi", true);
 
 			GameInstancesJson.Add(MakeShareable(new FJsonValueObject(MatchJson)));
+		}
+
+		// Players waiting in hub but not in any server instance
+		if (isLobbyData) {
+			AUTLobbyGameState* UTLobbyGameState = LobbyGameMode->UTLobbyGameState;
+			TArray<TSharedPtr<FJsonValue>> PlayersJson;
+
+			for (int32 Idx = 0; Idx < UTLobbyGameState->PlayerArray.Num(); Idx++)
+			{
+				AUTPlayerState* UTPlayerState = Cast<AUTPlayerState>(UTLobbyGameState->PlayerArray[Idx]);
+				TSharedPtr<FJsonObject> PlayerJson = MakeShareable(new FJsonObject);
+
+				// only get data useful for admins to sort/make matchs
+				PlayerJson->SetStringField(TEXT("UniqueId"), UTPlayerState->UniqueId.ToString());
+				PlayerJson->SetStringField(TEXT("PlayerName"), UTPlayerState->PlayerName);
+				PlayerJson->SetBoolField(TEXT("bIsInactive"), UTPlayerState->bIsInactive);
+				PlayerJson->SetNumberField(TEXT("XPLevel"), UTPlayerState->GetPrevXP());
+				PlayerJson->SetNumberField(TEXT("Ping"), (int32)UTPlayerState->ExactPing);
+				PlayerJson->SetStringField(TEXT("SavedNetworkAddress"), UTPlayerState->SavedNetworkAddress);
+				PlayersJson.Add(MakeShareable(new FJsonValueObject(PlayerJson)));
+			}
+
+			ServerInfoJson->SetArrayField(TEXT("WaitingPlayersInHub"), PlayersJson);
 		}
 
 		ServerInfoJson->SetArrayField(TEXT("GameInstances"), GameInstancesJson);
