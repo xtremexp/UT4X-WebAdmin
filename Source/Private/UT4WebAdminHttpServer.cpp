@@ -31,7 +31,7 @@ int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> j
 	std::string tmpStr = TCHAR_TO_ANSI(*JsonText);
 
 	char *jsonChar = new char[tmpStr.length() + 1];
-	strcpy(jsonChar, tmpStr.c_str());
+	strcpy_s(jsonChar, sizeof(tmpStr), tmpStr.c_str());
 
 
 	response = MHD_create_response_from_buffer(strlen(jsonChar),
@@ -177,7 +177,7 @@ int handle_serve_file(void *cls,
 
 	if (NULL == path) {
 		path = new char[strlen(&url[1]) + 1];
-		strcpy(path, &url[1]);
+		strcpy_s(path, sizeof(&url[1]), &url[1]);
 	}
 
 	const char *www = TCHAR_TO_ANSI(*wwwStr);
@@ -189,7 +189,7 @@ int handle_serve_file(void *cls,
 	char* concatString = new char[bufferSize];
 
 	// copy strings one and two over to the new buffer:
-	strcpy(concatString, www);
+	strcpy_s(concatString, sizeof(www), www);
 	strcat(concatString, path);
 
 
