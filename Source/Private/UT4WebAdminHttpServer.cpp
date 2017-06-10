@@ -3,7 +3,6 @@
 #include "UT4WebAdminServerInfo.h"
 #include "UT4WebAdminUtils.h"
 
-#define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
 #define UT4WA_WWW_FOLDER "www"
 
 #define IS_DEBUG 1
@@ -194,8 +193,8 @@ int handle_serve_file(void *cls,
 	strcat(concatString, path);
 
 
-	FILE* f;
-	f = fopen(concatString, "rb");
+	FILE* f = nullptr;
+	fopen_s(&f, concatString, "rb");
 
 	if (f != NULL) {
 		int fd = _open(concatString, O_RDONLY);
@@ -303,10 +302,12 @@ void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
 	}
 
 	// openssl req -days 365 -out server.pem -new -x509 -key server.key
-	FILE* fcert_file = fopen(TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
+	FILE* fcert_file = nullptr;
+	fopen_s(&fcert_file, TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
 
 	// openssl genrsa -out server.key 1024
-	FILE* fkey_file = fopen(TCHAR_TO_ANSI(*WebServerKeyFile), "r");
+	FILE* fkey_file = nullptr;
+	fopen_s(&fkey_file, TCHAR_TO_ANSI(*WebServerKeyFile), "r");
 
 	if (NULL != fcert_file && NULL != fkey_file) {
 
