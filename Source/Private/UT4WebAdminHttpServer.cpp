@@ -190,7 +190,7 @@ int handle_serve_file(void *cls,
 
 	// copy strings one and two over to the new buffer:
 	strcpy_s(concatString, sizeof(www), www);
-	strcat(concatString, path);
+	strcat_s(concatString, sizeof(concatString) + sizeof(path), path);
 
 
 	FILE* f = nullptr;
