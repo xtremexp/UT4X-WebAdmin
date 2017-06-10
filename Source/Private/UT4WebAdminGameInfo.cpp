@@ -312,7 +312,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		if (GameRuleset != NULL) {
 			for (int32 MapIdx = 0; MapIdx < GameRuleset->MapList.Num(); MapIdx++)
 			{
-				TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(GameRuleset->MapList[MapIdx]);
+				MapInfoJson = GetMapInfoJSON(GameRuleset->MapList[MapIdx]);
 				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 			}
 		}
@@ -339,7 +339,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 				const FString* Title = MapAsset.TagsAndValues.Find(NAME_MapInfo_Title);
 				const FString* Screenshot = MapAsset.TagsAndValues.Find(NAME_MapInfo_ScreenshotReference);
 
-				TSharedPtr<FJsonObject> MapInfoJson = GetMapAssetJSON(MapAsset);
+				MapInfoJson = GetMapAssetJSON(MapAsset);
 				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 			}
 		}
@@ -347,7 +347,7 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 			for (int32 MapIdx = 0; MapIdx < UTGameState->MapVoteList.Num(); MapIdx++)
 			{
 				AUTReplicatedMapInfo* UTReplicatedMapInfo = UTGameState->MapVoteList[MapIdx];
-				TSharedPtr<FJsonObject> MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
+				MapInfoJson = GetMapInfoJSON(UTReplicatedMapInfo);
 				MapInfosJson.Add(MakeShareable(new FJsonValueObject(MapInfoJson)));
 			}
 		}
