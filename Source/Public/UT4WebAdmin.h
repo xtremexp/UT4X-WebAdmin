@@ -7,8 +7,11 @@
 #include "UTGameSession.h"
 #include "UTMutator.h"
 #include "UT4WebAdminHttpServer.h"
+#include "UT4WebAdminSQLite.h"
 
 #include "UT4WebAdmin.generated.h"
+
+#define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
 
 // Log messages
 DEFINE_LOG_CATEGORY_STATIC(UT4WebAdmin, Log, All);
@@ -40,6 +43,9 @@ class AUT4WebAdmin : public AUTMutator
 	// Reference to http server
 	UUT4WebAdminHttpServer* _HttpServer;
 
+	// Reference to SQLite server
+	UUT4WebAdminSQLite* _SQLiteServer;
+
 	/* For chat history purpose */
 	bool AllowTextMessage_Implementation(FString& Msg, bool bIsTeamMessage, AUTBasePlayerController* Sender) override;
 
@@ -49,6 +55,7 @@ class AUT4WebAdmin : public AUTMutator
 	void NotifyLogout_Implementation(AController* C) override;
 
 	void ModifyLogin_Implementation(UPARAM(ref) FString& Portal, UPARAM(ref) FString& Options) override;
+
 
 private:
 	AUTGameMode* GameMode;

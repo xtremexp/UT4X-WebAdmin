@@ -7,9 +7,11 @@ AUT4WebAdmin::AUT4WebAdmin(const FObjectInitializer& ObjectInitializer)
 	_HttpServer = nullptr;
 	GameMode = nullptr;
 
-	DisplayName = FText::FromString("[UT4 WebAdmin 0.0.1]");
+	DisplayName = FText::FromString("UT4 WebAdmin v0.0.1");
 	Author = FText::FromString("Thomas 'XtremeXp/Winter' P.");
 	Description = FText::FromString("Web administration mutator for Unreal Tournament 4 (2017) ");
+
+	Start();
 }
 
 
@@ -17,8 +19,19 @@ void AUT4WebAdmin::Start()
 {
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
-	_HttpServer = NewObject<UUT4WebAdminHttpServer>();
+
+	// Init Http Server
+	if (_HttpServer == NULL) {
+		_HttpServer = NewObject<UUT4WebAdminHttpServer>();
+	}
+	
+	
+	// Init SQLite DB
+	if (_SQLiteServer == NULL) {
+		_SQLiteServer = NewObject<UUT4WebAdminSQLite>();
+	}
 }
+
 
 
 void AUT4WebAdmin::Stop()
@@ -42,6 +55,11 @@ bool AUT4WebAdmin::AllowTextMessage_Implementation(FString& Msg, bool bIsTeamMes
 
 	if (Sender && Sender->PlayerState && !Sender->PlayerState->bIsABot) {
 		UE_LOG(UT4WebAdmin, Log, TEXT(" Message from %s : %s"), *Sender->PlayerState->PlayerName, *Msg);
+
+		if (_SQLiteServer) {
+			AUTPlayerState* UTPlayerState = Cast<AUTPlayerState>(Sender->PlayerState);
+			_SQLiteServer->SaveChatMessage(UTPlayerState->PlayerName, UTPlayerState->UniqueId, UTPlayerState->GetTeamNum(), *Msg);
+		}
 	}
 
 	return Super::AllowTextMessage_Implementation(Msg, bIsTeamMessage, Sender);
@@ -73,5 +91,3 @@ void AUT4WebAdmin::Tick(float DeltaTime)
 		_HttpServer->Tick(DeltaTime);
 	}
 }
-
-
