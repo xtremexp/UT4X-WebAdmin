@@ -23,12 +23,15 @@ void AUT4WebAdmin::Start()
 	// Init Http Server
 	if (_HttpServer == NULL) {
 		_HttpServer = NewObject<UUT4WebAdminHttpServer>();
+		// http server started in UUT4WebAdminHttpServer.tick() until GWorld is available
+		// to get GWorld.GetAuthMode
 	}
 	
 	
 	// Init SQLite DB
 	if (_SQLiteServer == NULL) {
 		_SQLiteServer = NewObject<UUT4WebAdminSQLite>();
+		_SQLiteServer->Start();
 	}
 }
 
@@ -38,6 +41,10 @@ void AUT4WebAdmin::Stop()
 {
 	if (_HttpServer) {
 		_HttpServer->Stop();
+	}
+
+	if (_SQLiteServer) {
+		_SQLiteServer->Stop();
 	}
 }
 

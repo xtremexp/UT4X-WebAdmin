@@ -12,6 +12,7 @@
 #include "UT4WebAdmin.generated.h"
 
 #define UT4WA_PLUGIN_FOLDER "UT4WebAdmin"
+#define UT4WA_VERSION "0.0.1"
 
 // Log messages
 DEFINE_LOG_CATEGORY_STATIC(UT4WebAdmin, Log, All);
