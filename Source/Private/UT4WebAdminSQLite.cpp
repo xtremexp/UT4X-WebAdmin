@@ -173,11 +173,15 @@ int UUT4WebAdminSQLite::bind_text(sqlite3_stmt* stmt, int idx, const FString& te
 	int resultCode = SQLITE_ERROR;
 
 	if (*text != NULL) {
-		// tricky way to make it work ... TODO better way ?
-		char* utf8Char = new char[text.GetAllocatedSize()];
-		FTCHARToUTF8_Convert::Convert(utf8Char, sizeof(utf8Char), text.GetCharArray().GetData(), sizeof(text.GetCharArray().GetData()));
-		
-		resultCode = sqlite3_bind_text(stmt, idx, utf8Char, sizeof(utf8Char), SQLITE_STATIC);
+		// it seems that by default FString got UTF-16  encoded chars internally
+		// FString are UTF-16 encoded
+		// SQLite need UTF-8 so need to convert the string from UTF-16 to UTF-8
+		const int32 ConvertedTextLength = FTCHARToUTF8_Convert::ConvertedLength(*text, text.Len());
+		char* ConvertedText = new char[ConvertedTextLength];
+
+		FTCHARToUTF8_Convert::Convert(ConvertedText, ConvertedTextLength, *text, text.Len());
+
+		resultCode = sqlite3_bind_text(stmt, idx, ConvertedText, ConvertedTextLength, SQLITE_STATIC);
 
 		if (resultCode != SQLITE_OK) {
 			UE_LOG(UT4WebAdmin, Warning, TEXT("Could not bind text '%s' parameter for sql query at index %i. Result code: %i %s"), *text, idx, resultCode, *ResultCodeToMessage(resultCode));
