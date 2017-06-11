@@ -2,6 +2,30 @@
 #include "UT4WebAdminGameInfo.h"
 
 
+TSharedPtr<FJsonObject> GetChatMessagesJSON(TArray<FChatRow>& ChatRows)
+{
+	TSharedPtr<FJsonObject> ChatMessages = MakeShareable(new FJsonObject);
+
+	TArray<TSharedPtr<FJsonValue>> ChatRowsJson;
+
+	for (int32 ChatIdx = 0; ChatIdx < ChatRows.Num(); ChatIdx++)
+	{
+		FChatRow ChatRow = ChatRows[ChatIdx];
+		TSharedPtr<FJsonObject> ChatRowJson = MakeShareable(new FJsonObject);
+		ChatRowJson->SetStringField(TEXT("Message"), ChatRow.Message);
+		ChatRowJson->SetStringField(TEXT("SenderName"), ChatRow.SenderName);
+		ChatRowJson->SetNumberField(TEXT("SenderTeamNum"), ChatRow.SenderTeamNum);
+		ChatRowJson->SetStringField(TEXT("SenderUidStr"), ChatRow.SenderUidStr);
+		ChatRowJson->SetStringField(TEXT("Time"), ChatRow.Time); // Time as string in ISO8601 format
+		ChatRowJson->SetStringField(TEXT("SessionName"), ChatRow.SessionName); // TODO might be instance UID of lobby instance name
+
+		ChatRowsJson.Add(MakeShareable(new FJsonValueObject(ChatRowJson)));
+	}
+
+	ChatMessages->SetArrayField(TEXT("ChatRows"), ChatRowsJson);
+
+	return ChatMessages;
+}
 
 // WeakObjectPtr<AUTReplicatedGameRuleset>
 

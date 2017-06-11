@@ -6,6 +6,7 @@
 #include "UTBaseGameMode.h"
 #include "UTLobbyGameMode.h"
 #include "UT4WebAdminUtils.h"
+#include "UT4WebAdminSQLite.h"
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
 #include <io.h> // only work on windows FIX ME Linux
 #include <fcntl.h>
@@ -57,6 +58,10 @@ class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
 	/* Path to .key server key file */
 	UPROPERTY(Config)
 	FString WebServerKeyFile;
+
+	/* Reference to SQLite DB */
+	UUT4WebAdminSQLite* _SQLite;
+
 
 private:
 	struct MHD_Daemon *daemon;

@@ -64,6 +64,26 @@ post_iterator(void *cls,
 	return MHD_YES;
 }
 
+int handle_chat(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
+	size_t *upload_data_size, void **con_cls)
+{
+
+	// only get current chat for the moment
+	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
+
+		TArray<FChatRow> ChatRows;
+		/*
+		if (_SQLite) {
+			_SQLite->GetChatMessages(ChatRows);
+		}*/
+		TSharedPtr<FJsonObject> chatInfoJson = GetChatMessagesJSON(ChatRows);
+		return serve_json_file(connection, chatInfoJson);
+	}
+	// TODO chat from webadmin to players/hub/....
+
+	return MHD_NO;
+}
+
 int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
 	size_t *upload_data_size, void **con_cls)
 {
@@ -287,6 +307,9 @@ int answer_to_connection(void *cls,
 	}
 	else if (strcmp(url, "/serverinfo") == 0) {
 		return handle_server_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+	}
+	else if (strcmp(url, "/chat") == 0) {
+		return MHD_NO;//return handle_chat(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
 	}
 	else {
 		return handle_serve_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);

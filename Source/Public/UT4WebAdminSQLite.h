@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTGameInstance.h"
+#include "UT4WebAdminTypes.h"
 #include "ThirdParty/sqlite/sqlite3.h"
 
 #include "UT4WebAdminSQLite.generated.h"
@@ -36,8 +37,11 @@ class UUT4WebAdminSQLite : public UObject
 	/* Save chat messages for current session - Messages might be cleaned up after each new session */
 	void SaveChatMessageForSession(const FString& sessionName, const FString& senderName, const FString& senderUniqueId, const FString& message);
 
-	/* Global chat save - Never deleted */
+	/* Chat history saved to SQLite DB */
 	void SaveChatMessage(const FString& senderName, const FUniqueNetIdRepl& senderUniqueId, int32 senderTeamNum, const FString& message);
+
+	/* Get chat history from SQLite DB */
+	bool GetChatMessages(TArray<FChatRow>& ChatRows);
 
 	/* Utility function to bind fstring parameter to sql statement */
 	int bind_text(sqlite3_stmt* stmt, int idx, const FString& text);

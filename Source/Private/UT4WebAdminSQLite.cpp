@@ -79,6 +79,8 @@ void UUT4WebAdminSQLite::Stop() {
 	}
 }
 
+
+
 // slightly modified original UTGameInstance.ExecDatabaseCommand
 bool UUT4WebAdminSQLite::ExecDatabaseCommand(const FString& DatabaseCommand, TArray<FDbRow>& DatabaseRows)
 {
@@ -135,6 +137,36 @@ bool UUT4WebAdminSQLite::ExecDatabaseCommand(const FString& DatabaseCommand, TAr
 	}
 
 	return (DBreturn == SQLITE_DONE) || (DBreturn == SQLITE_OK);
+}
+
+// TODO add parameters for selective search
+bool UUT4WebAdminSQLite::GetChatMessages(TArray<FChatRow>& ChatRows) {
+
+	TArray<FDbRow> DatabaseRows;
+	FString Sql = "SELECT time, sender_name, sender_uid, sender_team_num, message FROM `ut4webadmin_chat`;";
+	ExecDatabaseCommand(*Sql, DatabaseRows);
+
+	for (int32 RowNum = 0; RowNum < DatabaseRows.Num(); RowNum ++)
+	{
+		FChatRow ChatRow;
+
+		for (int32 ColNum = 0; ColNum < DatabaseRows[RowNum].Text.Num(); ColNum++) {
+			
+			switch (ColNum) {
+				// Time in '2017-06-11T14:52:36.628Z' in ISO8601 format
+				case 0: ChatRow.Time = DatabaseRows[RowNum].Text[ColNum]; break;
+				case 1: ChatRow.SenderName = DatabaseRows[RowNum].Text[ColNum]; break;
+				case 2: ChatRow.SenderUidStr = DatabaseRows[RowNum].Text[ColNum]; break;
+				case 3: ChatRow.SenderTeamNum = FCString::Atoi(*DatabaseRows[RowNum].Text[ColNum]); break;
+				case 4: ChatRow.Message = DatabaseRows[RowNum].Text[ColNum]; break;
+				default: break;
+			}
+		}
+
+		ChatRows.Add(ChatRow);
+	}
+
+	return false;
 }
 
 void UUT4WebAdminSQLite::SaveChatMessage(const FString& senderName, const FUniqueNetIdRepl& senderUniqueId, int32 senderTeamNum, const FString& message) {
