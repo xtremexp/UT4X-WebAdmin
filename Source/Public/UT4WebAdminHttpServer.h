@@ -1,6 +1,9 @@
 #pragma once
 
-//#include "UT4WebAdmin.h"
+#if PLATFORM_WINDOWS
+#include "WindowsHWrapper.h"
+#include "AllowWindowsPlatformTypes.h"
+#endif
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTBaseGameMode.h"
@@ -8,7 +11,14 @@
 #include "UT4WebAdminUtils.h"
 #include "UT4WebAdminSQLite.h"
 #include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
-#include <io.h> // only work on windows FIX ME Linux
+
+#if PLATFORM_WINDOWS
+#include <io.h>
+#endif
+
+#if PLATFORM_LINUX
+#include <sys/io.h>
+#endif
 #include <fcntl.h>
 
 #include "UT4WebAdminHttpServer.generated.h"
