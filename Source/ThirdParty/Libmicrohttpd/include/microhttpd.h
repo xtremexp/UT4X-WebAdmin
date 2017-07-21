@@ -126,7 +126,7 @@ typedef intptr_t ssize_t;
  * Current version of the library.
  * 0x01093001 = 1.9.30-1.
  */
-#define MHD_VERSION 0x00095400
+#define MHD_VERSION 0x00095500
 
 /**
  * MHD-internal return code for "YES".
@@ -1526,11 +1526,15 @@ enum MHD_ValueKind
 
   /**
    * Response header
+   * @deprecated
    */
   MHD_RESPONSE_HEADER_KIND = 0,
+#define MHD_RESPONSE_HEADER_KIND \
+  _MHD_DEPR_IN_MACRO("Value MHD_RESPONSE_HEADER_KIND is deprecated and not used") \
+  MHD_RESPONSE_HEADER_KIND
 
   /**
-   * HTTP header.
+   * HTTP header (request/response).
    */
   MHD_HEADER_KIND = 1,
 
@@ -2835,6 +2839,9 @@ MHD_upgrade_action (struct MHD_UpgradeResponseHandle *urh,
  * Note that the application must not close() @a sock directly,
  * but instead use #MHD_upgrade_action() for special operations
  * on @a sock.
+ *
+ * Data forwarding to "upgraded" @a sock will be started as soon
+ * as this function return.
  *
  * Except when in 'thread-per-connection' mode, implementations
  * of this function should never block (as it will still be called
