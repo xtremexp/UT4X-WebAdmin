@@ -34,10 +34,9 @@ TSharedPtr<FJsonObject> GetGameRulesetJSON(TWeakObjectPtr<AUTReplicatedGameRules
 	TSharedPtr<FJsonObject> RulesetJson = MakeShareable(new FJsonObject);
 
 	if (GameRuleset != NULL) {
-		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
-		RulesetJson->SetStringField(TEXT("Description"), GameRuleset->Description);
-		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
-		RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
+		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Data.Title);
+		RulesetJson->SetStringField(TEXT("Description"), GameRuleset->Data.Description);
+		RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->Data.MaxPlayers);
 
 		TArray<TSharedPtr<FJsonValue>> MapListJson; 
 		// maplist useful to know which map admin can switch to
@@ -387,8 +386,8 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		TWeakObjectPtr<AUTReplicatedGameRuleset> GameRuleset = LobbyMatchInfo->CurrentRuleset;
 
 		if (GameRuleset != NULL) {
-			GameInfoJson->SetStringField(TEXT("Title"), GameRuleset->Title);
-			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
+			GameInfoJson->SetStringField(TEXT("Title"), GameRuleset->Data.Title);
+			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->Data.MaxPlayers);
 		}
 	}
 	else if (UTGameMode && UTGameState) {
