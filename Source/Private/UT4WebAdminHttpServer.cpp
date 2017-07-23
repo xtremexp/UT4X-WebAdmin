@@ -18,304 +18,120 @@ UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(const FObjectInitializer& ObjectI
 	SetFlags(RF_MarkAsRootSet);
 }
 
-// Method to serve json file to client
-int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> json)
-{
-	int ret;
-	struct MHD_Response *response;
 
-	FString JsonText;
-	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonText);
-	FJsonSerializer::Serialize(json.ToSharedRef(), Writer);
+static int callback_http(
+	struct lws *wsi,
+	enum lws_callback_reasons reason,
+	void *user,
+	void *in, 
+	size_t len
+) {
+	switch (reason) {
+		// http://git.warmcat.com/cgi-bin/cgit/libwebsockets/tree/lib/libwebsockets.h#n260
+	case LWS_CALLBACK_CLIENT_WRITEABLE:
+		printf("connection established\n");
 
-	std::string tmpStr = TCHAR_TO_ANSI(*JsonText);
+		// http://git.warmcat.com/cgi-bin/cgit/libwebsockets/tree/lib/libwebsockets.h#n281
+	case LWS_CALLBACK_HTTP: {
+		char *requested_uri = (char *)in;
+		printf("requested URI: %s\n", requested_uri);
 
-	char *jsonChar = new char[tmpStr.length() + 1];
-	strcpy_s(jsonChar, sizeof(tmpStr), tmpStr.c_str());
+		if (strcmp(requested_uri, "/") == 0) {
+			const char *universal_response = "Hello, World!";
+			// http://git.warmcat.com/cgi-bin/cgit/libwebsockets/tree/lib/libwebsockets.h#n597
+			lws_write_http(wsi, universal_response,
+				strlen(universal_response));
+			break;
 
-
-	response = MHD_create_response_from_buffer(strlen(jsonChar),
-		(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
-	MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, "application/json");
-
-	// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
-	AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-	if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
-		// TODO set real hostname and port
-		MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
-	}
-
-	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	MHD_destroy_response(response);
-
-	return ret;
-}
-
-static int
-post_iterator(void *cls,
-	enum MHD_ValueKind kind,
-	const char *key,
-	const char *filename,
-	const char *content_type,
-	const char *transfer_encoding,
-	const char *data, uint64_t off, size_t size)
-{
-
-	return MHD_YES;
-}
-
-int handle_chat(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-
-	// only get current chat for the moment
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
-
-		TArray<FChatRow> ChatRows;
-		/*
-		if (_SQLite) {
-			_SQLite->GetChatMessages(ChatRows);
-		}*/
-		TSharedPtr<FJsonObject> chatInfoJson = GetChatMessagesJSON(ChatRows);
-		return serve_json_file(connection, chatInfoJson);
-	}
-	// TODO chat from webadmin to players/hub/....
-
-	return MHD_NO;
-}
-
-int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	const char* action;
-	
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
-		action = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "action");
-		
-
-		FString FAction = FString(action);
-		
-
-		if (FAction.IsEmpty()) {
-			TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
-			return serve_json_file(connection, matchInfoJson);
 		}
 		else {
-			const char* playerId;
-			const char* message;
-			const char* isBan;
 
-			// TODO handle ban/kick removal
-			playerId = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "playerid");
-			message = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "message");
-			isBan = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "isban");
+			const char *universal_response = "Hello, World 2!";
+			// http://git.warmcat.com/cgi-bin/cgit/libwebsockets/tree/lib/libwebsockets.h#n597
+			lws_write_http(wsi, universal_response,
+				strlen(universal_response));
+			break;
 
-			FString FPlayerId = FString(playerId);
-			struct MHD_Response *response;
+			// try to get current working directory
+			//char cwd[1024];
+			//char *resource_path;
 
-			if (FAction == "kick") {
+			//if (getcwd(cwd, sizeof(cwd)) != NULL) {
+				/*
+				// allocate enough memory for the resource path
+				resource_path = malloc(strlen(cwd)
+					+ strlen(requested_uri));
 
-				bool bBan = (strcmp(isBan, "true") == 0);
-				bool kicked = KickPlayerByNetId(playerId, message, bBan);
-				const char* html;
+				// join current working directory to the resource path
+				sprintf(resource_path, "%s%s", cwd, requested_uri);
+				printf("resource path: %s\n", resource_path);
 
-				if (kicked) {
-					if (bBan) {
-						html = "Player has been banned !";
-					}
-					else {
-						html = "Player has been kicked !";
-					}
+				char *extension = strrchr(resource_path, '.');
+			
+				char *mime;
+
+				// choose mime type based on the file extension
+				if (extension == NULL) {
+					mime = "text/plain";
+				}
+				else if (strcmp(extension, ".png") == 0) {
+					mime = "image/png";
+				}
+				else if (strcmp(extension, ".jpg") == 0) {
+					mime = "image/jpg";
+				}
+				else if (strcmp(extension, ".gif") == 0) {
+					mime = "image/gif";
+				}
+				else if (strcmp(extension, ".html") == 0) {
+					mime = "text/html";
+				}
+				else if (strcmp(extension, ".css") == 0) {
+					mime = "text/css";
 				}
 				else {
-					html = "<html><body>Player was not kicked!</body></html>";
+					mime = "text/plain";
 				}
+				*/
 
-				response = MHD_create_response_from_buffer(strlen(html), (void*)html, MHD_RESPMEM_PERSISTENT);
+				// by default non existing resources return code 400
+				// for more information how this function handles 
+				// headers see it's source code
+				// http://git.warmcat.com/cgi-bin/cgit/libwebsockets/tree/lib/parsers.c#n1896
 
-				// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
-				AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-				if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
-					// TODO set real hostname and port
-					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
-				}
+				/*
+				lws_serve_http_file(struct lws *wsi, const char *file, const char *content_type,
+				const char *other_headers, int other_headers_len);
+				*/
+				//(wsi, resource_path, "text/plain", NULL, 0);
 
-				int ret =  MHD_queue_response(connection, MHD_HTTP_OK, response);
-				MHD_destroy_response(response);
-				return ret;
-			}
-			else {
-				const char *notExist = "<html><body>Invalid action type</body></html>";
-				response = MHD_create_response_from_buffer(strlen(notExist), (void*)notExist, MHD_RESPMEM_PERSISTENT);
-				return MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
-			}
-
-			return MHD_NO;
+			//}
 		}
-		
-	}
-	else  if (strcmp(method, MHD_HTTP_METHOD_POST) == 0){
 
+		// close connection
+		lws_close_reason(
+			wsi, LWS_CLOSE_STATUS_NORMAL, NULL, 0);
+		break;
+	}
+	default:
+		printf("unhandled callback\n");
+		break;
 	}
 
-	return MHD_NO;
+	return 0;
 }
 
-
-int handle_server_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
-		AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-		TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON(BaseGameMode);
-		return serve_json_file(connection, serverInfoJson);
-	}
-
-	return MHD_NO;
-}
-
-// Server files from root folder
-const FString wwwStr = FPaths::GamePluginsDir() + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER + "/";
-
-
-int handle_serve_file(void *cls,
-	struct MHD_Connection *connection,
-	const char *url,
-	const char *method, // GET / POST / PUT ...
-	const char *version, // HTML version 1.1
-	const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	struct MHD_Response *response;
-	char *path = NULL;
-	int ret;
-
-	// redirect from http://myserver:port/ to http://myserver:port/index.html
-	if (strcmp(url, "/") == 0) {
-		path = "index.html";
-	}
-
-	if (NULL == path) {
-		path = new char[strlen(&url[1]) + 1];
-		strcpy_s(path, sizeof(&url[1]), &url[1]);
-	}
-
-	const char *www = TCHAR_TO_ANSI(*wwwStr);
-
-	// calculate the required buffer size (also accounting for the null terminator):
-	int bufferSize = strlen(www) + strlen(path) + 1;
-
-	// allocate enough memory for the concatenated string:
-	char* concatString = new char[bufferSize];
-
-	// copy strings one and two over to the new buffer:
-	strcpy_s(concatString, sizeof(www), www);
-	strcat_s(concatString, sizeof(concatString) + sizeof(path), path);
-
-
-	FILE* f = nullptr;
-	fopen_s(&f, concatString, "rb");
-
-	if (f != NULL) {
-		int fd = _open(concatString, O_RDONLY);
-
-		// Determine file size
-		fseek(f, 0, SEEK_END);
-		size_t size = ftell(f);
-		response = MHD_create_response_from_fd(size, fd);
-
-		fclose(f);
-		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	}
-	else {
-		const char *notExist = "<html><body>File not found !</body></html>";
-		response = MHD_create_response_from_buffer(strlen(notExist),
-			(void*)notExist, MHD_RESPMEM_PERSISTENT);
-		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
-	}
-
-	MHD_destroy_response(response);
-	return ret;
-}
-
-int answer_to_connection(void *cls,
-	struct MHD_Connection *connection,
-	const char *url,
-	const char *method, // GET / POST / PUT ...
-	const char *version, // HTML version 1.1
-	const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	#ifndef IS_DEBUG
-	struct MHD_Response *response;
-	char *username;
-	const char *realm = "someusername";
-	const char *password = "somepassword";
-	username = MHD_digest_auth_get_username(connection);
-
-	// username authentification
-	if (NULL == username) {
-		response = MHD_create_response_from_buffer(strlen(DENIED), DENIED, MHD_RESPMEM_PERSISTENT);
-		ret = MHD_queue_auth_fail_response(connection, realm,
-			realm,
-			response,
-			MHD_NO);
-		MHD_destroy_response(response);
-		return ret;
-	}
-
-	// check username / password OK
-	ret = MHD_digest_auth_check(connection, realm,
-		username,
-		password,
-		300);
-
-	FString usernameFStr = ANSI_TO_TCHAR(username);
-
-	// bad username / password return invalid authentification
-	if ((ret == MHD_INVALID_NONCE) ||
-		(ret == MHD_NO))
+static struct lws_protocols protocols[] = {
+	// first protocol must always be HTTP handler
 	{
-		response = MHD_create_response_from_buffer(strlen(DENIED),
-			DENIED,
-			MHD_RESPMEM_PERSISTENT);
-		if (NULL == response)
-			return MHD_NO;
-		ret = MHD_queue_auth_fail_response(connection, realm,
-			OPAQUE1,
-			response,
-			(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
-		MHD_destroy_response(response);
-
-		//UE_LOG(UT4WebAdmin, Warning, TEXT("User '%s' failed to authenticate."), *usernameFStr);
-		return ret;
+		"http-only",
+		callback_http,
+		0
+	},
+	{
+		NULL, NULL, 0
 	}
-	else {
-		//UE_LOG(UT4WebAdmin, Log, TEXT("User '%s' authenticated."), *usernameFStr);
-	}
-	#endif
-
-	// USER AUTHENTICATED LET'S GO !
-
-	// only handle get/post/head
-	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) && (0 != strcmp(method, MHD_HTTP_METHOD_HEAD)) && (0 != strcmp(method, MHD_HTTP_METHOD_POST))) {
-		return MHD_NO;
-	}
-
-	if (strcmp(url, "/gameinfo") == 0) {
-		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
-	}
-	else if (strcmp(url, "/serverinfo") == 0) {
-		return handle_server_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
-	}
-	else if (strcmp(url, "/chat") == 0) {
-		return MHD_NO;//return handle_chat(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
-	}
-	else {
-		return handle_serve_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
-	}
-}
-
+};
 
 void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
 {
@@ -326,11 +142,11 @@ void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
 
 	// openssl req -days 365 -out server.pem -new -x509 -key server.key
 	FILE* fcert_file = nullptr;
-	fopen_s(&fcert_file, TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
+	//fopen_s(&fcert_file, TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
 
 	// openssl genrsa -out server.key 1024
 	FILE* fkey_file = nullptr;
-	fopen_s(&fkey_file, TCHAR_TO_ANSI(*WebServerKeyFile), "r");
+	//fopen_s(&fkey_file, TCHAR_TO_ANSI(*WebServerKeyFile), "r");
 
 	if (NULL != fcert_file && NULL != fkey_file) {
 
@@ -347,11 +163,21 @@ void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
 		rewind(fkey_file);
 		fread(key_pem, sizeof(char), size2, fkey_file);
 
-		daemon = MHD_start_daemon(MHD_USE_AUTO | MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_DEBUG, httpPort, NULL, NULL,
-			&answer_to_connection, NULL,
-			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
-			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-			MHD_OPTION_END);
+		const char *interfc = NULL;
+		int opts = 0;
+
+		struct lws_context_creation_info ContextInfo = {};
+
+
+		ContextInfo.port = httpPort;
+		ContextInfo.protocols = protocols;
+		ContextInfo.uid = -1;
+		ContextInfo.gid = -1;
+		ContextInfo.options |= LWS_SERVER_OPTION_PEER_CERT_NOT_REQUIRED | LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS;
+		ContextInfo.ssl_cipher_list = nullptr;
+		
+
+		context = lws_create_context(&ContextInfo);
 	}
 
 
@@ -367,8 +193,18 @@ void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
 
 void UUT4WebAdminHttpServer::StartWithoutTLS(uint32 httpPort)
 {
-	daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG, httpPort, NULL, NULL,
-		&answer_to_connection, NULL, MHD_OPTION_END);
+	struct lws_context_creation_info ContextInfo = {};
+
+
+	ContextInfo.port = httpPort;
+	ContextInfo.protocols = protocols;
+	ContextInfo.uid = -1;
+	ContextInfo.gid = -1;
+	ContextInfo.options |= LWS_SERVER_OPTION_PEER_CERT_NOT_REQUIRED | LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS;
+	ContextInfo.ssl_cipher_list = nullptr;
+
+
+	context = lws_create_context(&ContextInfo);
 }
 
 void UUT4WebAdminHttpServer::Start()
@@ -408,7 +244,7 @@ void UUT4WebAdminHttpServer::Start()
 	}
 	
 
-	if (daemon == NULL) {
+	if (context == NULL) {
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" UT4WebAdmin failed to start http(s) server at port: %i "), httpPort);
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
@@ -422,8 +258,8 @@ void UUT4WebAdminHttpServer::Start()
 
 void UUT4WebAdminHttpServer::Stop()
 {
-	if (NULL != daemon) {
-		MHD_stop_daemon(daemon);
+	if (NULL != context) {
+		lws_context_destroy(context);
 	}
 }
 bool started = false;
@@ -431,7 +267,7 @@ bool started = false;
 // Start HTTPs server when GWorld available
 void UUT4WebAdminHttpServer::Tick(float DeltaTime)
 {
-	if (!started && GWorld != NULL && NULL == daemon) {
+	if (!started && GWorld != NULL && NULL == context) {
 		started = true;
 		Start();
 	}

@@ -4,13 +4,18 @@
 #include "WindowsHWrapper.h"
 #include "AllowWindowsPlatformTypes.h"
 #endif
+
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTBaseGameMode.h"
 #include "UTLobbyGameMode.h"
 #include "UT4WebAdminUtils.h"
 #include "UT4WebAdminSQLite.h"
-#include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
+
+
+#include "ThirdParty/libWebSockets/include/libwebsockets.h"
+#include "ThirdParty/libWebSockets/include/lws_config.h"
+
 
 #if PLATFORM_WINDOWS
 #include <io.h>
@@ -74,6 +79,6 @@ class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
 
 
 private:
-	struct MHD_Daemon *daemon;
+	struct lws_context *context;
 	AUTBaseGameMode* BaseGameMode;
 };
