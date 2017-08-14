@@ -18,7 +18,7 @@ UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(const FObjectInitializer& ObjectI
 	//SetFlags(RF_MarkAsRootSet);
 
 	StopRequested.Reset();
-	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 8 * 1024, TPri_AboveNormal);
+	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 16 * 1024, TPri_SlightlyBelowNormal);
 }
 
 const FString wwwStr = FPaths::GamePluginsDir() + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER + "/";
@@ -67,14 +67,14 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 ) {
 
 
-	UE_LOG(UT4WebAdmin, Log, TEXT("CallBack_HTTP"));
+	//UE_LOG(UT4WebAdmin, Log, TEXT("CallBack_HTTP"));
 
 	switch (reason) {
 
 
 	case LWS_CALLBACK_HTTP: {
 
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60); // TODO useful? delete?
+		//lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60); // TODO useful? delete?
 
 		char *requested_uri = (char *)in;
 
@@ -88,7 +88,7 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 			// server index.html file
 			if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/")) == 0)
 			{
-				requested_uri = "index.html";
+				requested_uri = (char*) "index.html";
 			}
 			// TODO handle
 			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/gameinfo")) == 0) {
@@ -108,28 +108,28 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 
 			// choose mime type based on the file extension
 			if (extension == NULL) {
-				mime = "text/plain";
+				mime = (char*) "text/plain";
 			}
 			else if (strcmp(extension, ".png") == 0) {
-				mime = "image/png";
+				mime = (char*) "image/png";
 			}
 			else if (strcmp(extension, ".jpg") == 0) {
-				mime = "image/jpg";
+				mime = (char*) "image/jpg";
 			}
 			else if (strcmp(extension, ".gif") == 0) {
-				mime = "image/gif";
+				mime = (char*) "image/gif";
 			}
 			else if (strcmp(extension, ".html") == 0) {
-				mime = "text/html";
+				mime = (char*) "text/html";
 			}
 			else if (strcmp(extension, ".css") == 0) {
-				mime = "text/css";
+				mime = (char*) "text/css";
 			}
 			else if (strcmp(extension, ".ico") == 0) {
-				mime = "image/x-icon";
+				mime = (char*) "image/x-icon";
 			}
 			else {
-				mime = "text/plain";
+				mime = (char*) "text/plain";
 			}
 
 			lws_serve_http_file(wsi, path, mime, NULL, 0);
@@ -141,8 +141,7 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 			lws_callback_on_writable(wsi);
 		}
 
-		lws_close_reason(
-			wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+		lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
 		break;
 	}
 
@@ -205,8 +204,12 @@ bool UUT4WebAdminHttpServer::Init()
 	ContextInfo.options = 0;
 	//ContextInfo.user = this;
 	ContextInfo.extensions = NULL;
+	if (WebHttpsEnabled) {
+		ContextInfo.ssl_cert_filepath = "D:\\server_certificate.pem";
+		ContextInfo.ssl_private_key_filepath = "D:\\server_key.pem";
+	}
 	//ContextInfo.options |= LWS_SERVER_OPTION_PEER_CERT_NOT_REQUIRED | LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS;
-	//ContextInfo.ssl_cipher_list = nullptr;
+	ContextInfo.ssl_cipher_list = nullptr;
 
 
 	Context = lws_create_context(&ContextInfo);
