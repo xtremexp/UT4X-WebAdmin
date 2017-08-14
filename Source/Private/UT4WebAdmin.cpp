@@ -95,6 +95,6 @@ void AUT4WebAdmin::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (_HttpServer) {
-		_HttpServer->Tick(DeltaTime);
+		//_HttpServer->Tick(DeltaTime);
 	}
 }
