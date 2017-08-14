@@ -57,6 +57,38 @@ void UUT4WebAdminHttpServer::Exit()
 	Context = NULL;
 }
 
+static char* getMimeFromExtension(char* extension) {
+	char *mime;
+
+	// choose mime type based on the file extension
+	if (extension == NULL) {
+		mime = (char*) "text/plain";
+	}
+	else if (strcmp(extension, ".png") == 0) {
+		mime = (char*) "image/png";
+	}
+	else if (strcmp(extension, ".jpg") == 0) {
+		mime = (char*) "image/jpg";
+	}
+	else if (strcmp(extension, ".gif") == 0) {
+		mime = (char*) "image/gif";
+	}
+	else if (strcmp(extension, ".html") == 0) {
+		mime = (char*) "text/html";
+	}
+	else if (strcmp(extension, ".css") == 0) {
+		mime = (char*) "text/css";
+	}
+	else if (strcmp(extension, ".ico") == 0) {
+		mime = (char*) "image/x-icon";
+	}
+	else {
+		mime = (char*) "text/plain";
+	}
+
+	return mime;
+}
+
 
 int UUT4WebAdminHttpServer::CallBack_HTTP(
 	struct lws *wsi,
@@ -104,35 +136,8 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 			sprintf(path, "%s%s", www, requested_uri);
 
 			char *extension = strrchr(path, '.');
-			char *mime;
 
-			// choose mime type based on the file extension
-			if (extension == NULL) {
-				mime = (char*) "text/plain";
-			}
-			else if (strcmp(extension, ".png") == 0) {
-				mime = (char*) "image/png";
-			}
-			else if (strcmp(extension, ".jpg") == 0) {
-				mime = (char*) "image/jpg";
-			}
-			else if (strcmp(extension, ".gif") == 0) {
-				mime = (char*) "image/gif";
-			}
-			else if (strcmp(extension, ".html") == 0) {
-				mime = (char*) "text/html";
-			}
-			else if (strcmp(extension, ".css") == 0) {
-				mime = (char*) "text/css";
-			}
-			else if (strcmp(extension, ".ico") == 0) {
-				mime = (char*) "image/x-icon";
-			}
-			else {
-				mime = (char*) "text/plain";
-			}
-
-			lws_serve_http_file(wsi, path, mime, NULL, 0);
+			lws_serve_http_file(wsi, path, getMimeFromExtension(extension), NULL, 0);
 		}
 		
 		else
@@ -204,12 +209,12 @@ bool UUT4WebAdminHttpServer::Init()
 	ContextInfo.options = 0;
 	//ContextInfo.user = this;
 	ContextInfo.extensions = NULL;
+
 	if (WebHttpsEnabled) {
 		ContextInfo.ssl_cert_filepath = "D:\\server_certificate.pem";
 		ContextInfo.ssl_private_key_filepath = "D:\\server_key.pem";
+		ContextInfo.ssl_cipher_list = nullptr;
 	}
-	//ContextInfo.options |= LWS_SERVER_OPTION_PEER_CERT_NOT_REQUIRED | LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS;
-	ContextInfo.ssl_cipher_list = nullptr;
 
 
 	Context = lws_create_context(&ContextInfo);
