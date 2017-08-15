@@ -62,7 +62,12 @@ int UUT4WebAdminHttpServer::ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObj
 	std::string tmpStr = TCHAR_TO_ANSI(*JsonText);
 	char *jsonChar = &tmpStr[0u];
 
-	char *Header = (char *) "HTTP/1.1 200 OK\r\nServer: UT4Webadmin Server\r\nConnection: close\r\nContent-Type: application/json\r\n\r\n";
+	char Header[1024];
+	sprintf(Header, "HTTP/1.1 200 OK\x0d\x0a"
+		"Server: UT4Webadmin Server\x0d\x0a"
+		"Connection: close\x0d\x0a"
+		"Content-Type: application/json\x0d\x0a"
+		"Content-Length: %d\x0d\x0a\x0d\x0a", (int) strlen(jsonChar));
 
 	char *Response = NULL;
 	Response = (char *) malloc(strlen(Header) + strlen(jsonChar));
@@ -148,12 +153,14 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/gameinfo")) == 0) {
 				TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
 				ServeJsonObject(wsi, matchInfoJson);
+				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
 				break;
 			}
 			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/serverinfo")) == 0) {
 
 				TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON();
 				ServeJsonObject(wsi, serverInfoJson);
+				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
 				break;
 			}
 
