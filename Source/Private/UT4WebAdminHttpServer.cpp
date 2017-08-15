@@ -134,7 +134,7 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 
 	case LWS_CALLBACK_HTTP: {
 
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 10); // TODO useful? delete?
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 2); // TODO useful? delete?
 
 		char *requested_uri = (char *)in;
 

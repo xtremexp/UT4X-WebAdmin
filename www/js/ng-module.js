@@ -79,6 +79,8 @@ var ut4waApp = angular.module('ut4waApp', [])
 		}
 	}
   
+  
+
 	$http.get(url).then(function(response) {
 		console.log(response.data);
         
@@ -86,6 +88,7 @@ var ut4waApp = angular.module('ut4waApp', [])
 		$scope.DataFromDedi = !response.data.data.IsLobbyServer;
 		$scope.hasMatches = (response.data.data.NumMatches > 0);
 		
+		$scope.WaitingPlayersInHub = response.data.data.WaitingPlayersInHub;
 		$scope.GameInstances = response.data.data.GameInstances;
 		
 		for(var i=0; i<$scope.GameInstances.length; i++){

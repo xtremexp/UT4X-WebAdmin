@@ -102,15 +102,10 @@
 	getGameInfoData();
 
 	function getGameInfoData(){
-	
-		var data = {
-			action: 'gameinfo'
-		}
-	
+
 		$.ajax({
-			type: "POST",
-			url: "/",
-			data: data
+			type: "GET",
+			url: "/gameinfo",
 			cache: false,
 			success: function(data) {
 				console.log(data);
