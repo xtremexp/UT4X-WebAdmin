@@ -54,8 +54,9 @@ class UUT4WebAdminHttpServer : public UObject, public FRunnable//, public FTicka
 	virtual bool IsTickableWhenPaused() const override
 	{
 		return true;
-	}
-	*/
+	}*/
+
+	static int ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObject> json);
 
 	static int CallBack_HTTP(struct lws *wsi,
 		enum lws_callback_reasons reason, void *user,
