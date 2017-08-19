@@ -352,10 +352,12 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		if (UTGameState->MapVoteList.Num() == 0) {
 			TArray<FString> MapPrefixList;
 			MapPrefixList.Add(UTGameMode->GetMapPrefix());
-			TArray<FAssetData> AllMaps;
 			TArray<FString> MapList;
 
-			UTGameState->ScanForMaps(MapPrefixList, AllMaps);
+			// avoid always scanning
+			if (AllMaps.Num() == 0) {
+				UTGameState->ScanForMaps(MapPrefixList, AllMaps);
+			}
 
 			// Now, go through all of the maps 
 			// TODO cache
