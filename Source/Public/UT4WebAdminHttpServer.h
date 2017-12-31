@@ -1,11 +1,14 @@
 #pragma once
 
+#include "UT4WebAdmin.h"
+
 #if PLATFORM_WINDOWS
 #include "WindowsHWrapper.h"
 #include "AllowWindowsPlatformTypes.h"
 #endif
 
 #include "Core.h"
+#include "CoreMinimal.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "HAL/Runnable.h"
 #include "UnrealTournament.h"
@@ -28,12 +31,16 @@
 #endif
 #include <fcntl.h>
 
-#include "UT4WebAdminHttpServer.generated.h"
+//#include "UT4WebAdminHttpServer.generated.h"
 
-UCLASS(Config=UT4WebAdmin)
-class UUT4WebAdminHttpServer : public UObject, public FRunnable//, public FTickableGameObject
+//UCLASS(Config=UT4WebAdmin)
+class UUT4WebAdminHttpServer 
+	: public FRunnable
 {
-	GENERATED_UCLASS_BODY()
+	//GENERATED_UCLASS_BODY()
+	public:
+		UUT4WebAdminHttpServer(int32 InPort, UUT4WebAdminSQLite* SQLiteServer);
+
 
 	public:
 

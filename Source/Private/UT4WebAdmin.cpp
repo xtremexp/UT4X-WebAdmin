@@ -20,18 +20,25 @@ void AUT4WebAdmin::Start()
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
 
-	// Init Http Server
-	if (_HttpServer == NULL) {
-		_HttpServer = NewObject<UUT4WebAdminHttpServer>();
-		// http server started in UUT4WebAdminHttpServer.tick() until GWorld is available
-		// to get GWorld.GetAuthMode
-	}
-	
-	
 	// Init SQLite DB
+	// TODO SQLite in separate thread
 	if (_SQLiteServer == NULL) {
 		_SQLiteServer = NewObject<UUT4WebAdminSQLite>();
 		_SQLiteServer->Start();
+	}
+
+	// Init Http Server
+	if (_HttpServer == NULL) {
+		_HttpServer = new UUT4WebAdminHttpServer(8080, _SQLiteServer);// NewObject<UUT4WebAdminHttpServer>(8080, _SQLiteServer);
+
+		/*
+		if (_SQLiteServer != NULL) {
+			//TSharedPtr<UUT4WebAdminSQLite> fuck(_SQLiteServer);
+			_HttpServer->SetSQLiteServer(_SQLiteServer);
+		}*/
+
+		// http server started in UUT4WebAdminHttpServer.tick() until GWorld is available
+		// to get GWorld.GetAuthMode
 	}
 }
 

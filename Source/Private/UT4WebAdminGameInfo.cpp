@@ -2,6 +2,20 @@
 #include "UT4WebAdminGameInfo.h"
 
 
+TSharedPtr<FJsonObject> GetChatInfoJSON(UUT4WebAdminSQLite* _SQLiteServer)
+{
+
+	if (_SQLiteServer != NULL) {
+		TArray<FChatRow> ChatRows;
+		_SQLiteServer->GetChatMessages(ChatRows);
+		return GetChatMessagesJSON(ChatRows);
+	}
+	else {
+		return MakeShareable(new FJsonObject);
+	}
+}
+
+
 TSharedPtr<FJsonObject> GetChatMessagesJSON(TArray<FChatRow>& ChatRows)
 {
 	TSharedPtr<FJsonObject> ChatMessages = MakeShareable(new FJsonObject);

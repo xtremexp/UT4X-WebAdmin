@@ -1,7 +1,9 @@
-#include "UT4WebAdmin.h"
+
+//#include "UT4WebAdmin.h"
+//#include "UTBaseGameMode.h"
 #include "UT4WebAdminGameInfo.h"
 #include "UT4WebAdminServerInfo.h"
-#include "UT4WebAdminUtils.h"
+//#include "UT4WebAdminUtils.h"
 
 #define UT4WA_WWW_FOLDER "www"
 
@@ -11,22 +13,51 @@
 #define DENIED "<html><head><title>Acces denied</title></head><body>Access denied</body></html>"
 #define OPAQUE1 "11733b200778ce33060f31c9af70a870ba96ddd4"
 
+/*
+UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(int32 InPort, const UUT4WebAdminSQLite* SQLiteServer)
+	: Super()*/
+/*
 UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-{
+	{
 	// don't garbace collect me
 	//SetFlags(RF_MarkAsRootSet);
 
 	StopRequested.Reset();
-	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 16 * 1024, TPri_SlightlyBelowNormal);
+	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 16 * 1024, TPri_AboveNormal);
+}
+*/
+UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(int32 InPort, UUT4WebAdminSQLite* SQLiteServer)
+{
+	this->WebHttpPort = InPort;
+	this->_SQLite = SQLiteServer;
+
+	StopRequested.Reset();
+	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 16 * 1024, TPri_AboveNormal);
 }
 
 const FString wwwStr = FPaths::GamePluginsDir() + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER + "/";
 
+// a object of this type is associated by libwebsocket to every http session.
+struct PerSessionData
+{
+	// data being received.
+	TArray<uint8> In;
+	// data being sent out.
+	TArray<uint8> Out;
+};
+
+
 static struct lws_protocols Protocols[] = {
 	/* first protocol must always be HTTP handler */
-	{ "http-only", UUT4WebAdminHttpServer::CallBack_HTTP, 0 },
-	{ NULL, NULL, 0 }
+	{ "http-only",
+		UUT4WebAdminHttpServer::CallBack_HTTP,
+		sizeof(struct PerSessionData),
+		15 * 1024,
+		0,
+		NULL
+	},
+	{ NULL, NULL, 0, 0, 0, NULL }
 };
 
 uint32 UUT4WebAdminHttpServer::Run()
@@ -52,6 +83,7 @@ void UUT4WebAdminHttpServer::Exit()
 	lws_context_destroy(Context);
 	Context = NULL;
 }
+
 
 int UUT4WebAdminHttpServer::ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObject> json)
 {
@@ -127,7 +159,9 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 	size_t len
 ) {
 
+	PerSessionData* BufferInfo = (PerSessionData*) user;
 	struct lws_context *Context = lws_get_context(wsi);
+	UUT4WebAdminHttpServer* Server = (UUT4WebAdminHttpServer*)lws_context_user(Context);
 
 	switch (reason) {
 
@@ -163,6 +197,12 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
 				break;
 			}
+			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/chatinfo")) == 0) {
+				TSharedPtr<FJsonObject> chatInfoJson = GetChatInfoJSON(Server->_SQLite);
+				ServeJsonObject(wsi, chatInfoJson);
+				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+				break;
+			}
 
 			// serving normal file
 			path = (char *)malloc(strlen(www) + strlen(requested_uri));
@@ -178,11 +218,108 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 		// not handled yet
 		else
 		{
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" POST REQUEST !!!"));
 			// we got a post request!, queue up a write callback.
-			//lws_callback_on_writable(wsi);
+			lws_callback_on_writable(wsi);
 		}
 
-		lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+		//lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+		break;
+	}
+	
+	case LWS_CALLBACK_HTTP_BODY: {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" INCOMING POST REQUEST !!!"));
+		// post data is coming in, push it on to our incoming buffer.
+		//UE_LOG(LogFileServer, Log, TEXT("Incoming HTTP Partial Body Size %d, total size  %d"), Len, Len + BufferInfo->In.Num());
+		// FIXME BufferInfo crashing
+		//BufferInfo->In.Append((uint8*) in, len);
+		// we received some data - update time out.
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
+		break;
+	}
+								 
+	// POST REQUEST ENDED FROM CLIENT
+	// SEND BACK
+	case LWS_CALLBACK_HTTP_BODY_COMPLETION:
+	{
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" INCOMING LWS_CALLBACK_HTTP_BODY_COMPLETION REQUEST !!!"));
+		// we have all the post data from the client.
+		// create archives and process them.
+		UE_LOG(UT4WebAdmin, Log, TEXT("Incoming HTTP total size  %d"), BufferInfo->In.Num());
+		FMemoryReader Reader(BufferInfo->In);
+		TArray<uint8> Writer;
+
+		//FNetworkFileServerHttp::Process(Reader, Writer, Server);
+
+		ANSICHAR Json[1024];
+		int LengthJson = FCStringAnsi::Sprintf(
+			(ANSICHAR*)Json,
+			"{json:sucess,\r\ndata:'fuck'}"//,
+											  //Writer.Num()
+		);
+
+		// even if we have 0 data to push, tell the client that we don't any data.
+		ANSICHAR Header[1024];
+		int Length = FCStringAnsi::Sprintf(
+			(ANSICHAR*)Header,
+			"HTTP/1.1 200 OK\x0d\x0a"
+			"Server: Unreal File Server\x0d\x0a"
+			"Connection: close\x0d\x0a"
+			"Content-Type: application/json\x0d\x0a",
+			//"Content-Type: application/octet-stream \x0d\x0a",
+			"Content-Length: %d\x0d\x0a\x0d\x0a",
+			LengthJson
+			//Writer.Num()
+		);
+
+		
+
+		// Add Http Header
+		BufferInfo->Out.Append((uint8*)Header, Length);
+		// Add Binary Data.
+		BufferInfo->Out.Append((uint8*)Json, LengthJson);
+
+		// we have enqueued data increase timeout and push a writable callback.
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
+		lws_callback_on_writable(wsi);
+
+		break;
+	}
+
+	case LWS_CALLBACK_CLOSED_HTTP: {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_CLOSED_HTTP"));
+
+
+		// client went away or
+		//clean up.
+		BufferInfo->In.Empty();
+		BufferInfo->Out.Empty();
+
+		break;
+	}
+
+	case LWS_CALLBACK_PROTOCOL_DESTROY: {
+		// we are going away.
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_PROTOCOL_DESTROY"));
+		break;
+	}
+
+	case LWS_CALLBACK_HTTP_WRITEABLE: {
+
+		// get rid of superfluous write callbacks.
+		if (BufferInfo == NULL)
+			break;
+
+		// we have data o send out.
+		if (BufferInfo->Out.Num())
+		{
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_HTTP_WRITEABLE"));
+			int SentSize = lws_write(wsi, (unsigned char*)BufferInfo->Out.GetData(), BufferInfo->Out.Num(), LWS_WRITE_HTTP);
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" Sent bytes: %d"), SentSize);
+			// get rid of the data that has been sent.
+			BufferInfo->Out.RemoveAt(0, SentSize);
+		}
+
 		break;
 	}
 
@@ -202,9 +339,12 @@ void lws_debugLog(int level, const char *line)
 }
 
 bool started = false;
+bool startIt = false;
 
 bool UUT4WebAdminHttpServer::Init()
 {
+	startIt = true;
+
 	// FIXME for some unknow reason the init function is called 3 times then it crashes
 	// this 'trick' prevents the crash
 	if (started) {
@@ -221,23 +361,20 @@ bool UUT4WebAdminHttpServer::Init()
 		WebHttpPort = 8080;
 	}
 
-	
+	bool isGameInstance = IsGameInstanceServer();
 
-	// for lobby instance server open http port at (instance port + 100)
-
-	/*
-	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-	bool IsGameInstanceServer = BaseGameMode->IsGameInstanceServer();
-
-	if (IsGameInstanceServer) {
+	if (isGameInstance) {
+		WebHttpPort += 100;
+		/*
 		FString addressUrl = GWorld->GetAddressURL();
 
 		TArray<FString> PathItemList;
+		// get current port from master server
 		addressUrl.ParseIntoArray(PathItemList, TEXT(":"), true);
 
-		httpPort = FCString::Atoi(*PathItemList[PathItemList.Num() - 1]) + 100;
+		WebHttpPort = FCString::Atoi(*PathItemList[PathItemList.Num() - 1]) + 100;
+		*/
 	}
-	*/
 
 
 	ContextInfo.port = WebHttpPort;
@@ -246,17 +383,18 @@ bool UUT4WebAdminHttpServer::Init()
 	ContextInfo.uid = -1;
 	ContextInfo.gid = -1;
 	ContextInfo.options = 0;
-	//ContextInfo.user = this;
+	ContextInfo.user = this;
 	ContextInfo.extensions = NULL;
 
-
-	if (WebHttpsEnabled) {
+	// disabled - FIXME http server won't work properly if enabled
+	/*
+	if (WebHttpsEnabled && !isGameInstance) {
 		//ContextInfo.port = 443;
 		ContextInfo.ssl_cert_filepath = "D:\\server_certificate.pem";
 		ContextInfo.ssl_private_key_filepath = "D:\\server_key.pem";
 		ContextInfo.ssl_cipher_list =  nullptr;
 		ContextInfo.options |= LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT;
-	}
+	}*/
 
 	//ContextInfo.options |= LWS_SERVER_OPTION_VALIDATE_UTF8;
 
@@ -278,14 +416,3 @@ bool UUT4WebAdminHttpServer::Init()
 	//Ready.Set(true);
 	return true;
 }
-
-/*
-void UUT4WebAdminHttpServer::Tick(float DeltaTime)
-{
-	
-}
-
-TStatId UUT4WebAdminHttpServer::GetStatId() const
-{
-	RETURN_QUICK_DECLARE_CYCLE_STAT(UUT4WebAdminHttpServer, STATGROUP_Tickables);
-}*/
