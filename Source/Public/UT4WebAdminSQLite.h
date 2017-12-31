@@ -38,7 +38,7 @@ class UUT4WebAdminSQLite : public UObject
 	void SaveChatMessageForSession(const FString& sessionName, const FString& senderName, const FString& senderUniqueId, const FString& message);
 
 	/* Chat history saved to SQLite DB */
-	void SaveChatMessage(const FString& senderName, const FUniqueNetIdRepl& senderUniqueId, int32 senderTeamNum, const FString& message);
+	void SaveChatMessage(const FChatRow& ChatRow);
 
 	/* Get chat history from SQLite DB */
 	bool GetChatMessages(TArray<FChatRow>& ChatRows);

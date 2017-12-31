@@ -72,7 +72,19 @@ bool AUT4WebAdmin::AllowTextMessage_Implementation(FString& Msg, bool bIsTeamMes
 
 		if (_SQLiteServer) {
 			AUTPlayerState* UTPlayerState = Cast<AUTPlayerState>(Sender->PlayerState);
-			_SQLiteServer->SaveChatMessage(UTPlayerState->PlayerName, UTPlayerState->UniqueId, UTPlayerState->GetTeamNum(), *Msg);
+
+			FChatRow ChatRow;
+			ChatRow.Time = FDateTime::Now().ToIso8601();
+			ChatRow.SenderName = UTPlayerState->PlayerName;
+			ChatRow.SenderUidStr = UTPlayerState->UniqueId.ToString();
+			ChatRow.SenderTeamNum = UTPlayerState->GetTeamNum();
+			ChatRow.Message = Msg;
+
+			// save chat for current session game
+			ChatRows.Add(ChatRow);
+
+			// save chat in SQL Lite
+			_SQLiteServer->SaveChatMessage(ChatRow);
 		}
 	}
 

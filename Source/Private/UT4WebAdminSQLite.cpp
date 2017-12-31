@@ -182,7 +182,7 @@ bool UUT4WebAdminSQLite::GetChatMessages(TArray<FChatRow>& ChatRows) {
 	return false;
 }
 
-void UUT4WebAdminSQLite::SaveChatMessage(const FString& senderName, const FUniqueNetIdRepl& senderUniqueId, int32 senderTeamNum, const FString& message) {
+void UUT4WebAdminSQLite::SaveChatMessage(const FChatRow& ChatRow) {
 
 	if ( Database ) {
 		FString sql = "INSERT INTO `ut4webadmin_chat` (`time`, `sender_name`, `sender_uid`, `sender_team_num`, `message`) VALUES (?, ?, ?, ?, ?);";
@@ -192,11 +192,11 @@ void UUT4WebAdminSQLite::SaveChatMessage(const FString& senderName, const FUniqu
 
 		if (resultCode == SQLITE_OK) {
 
-			bind_text(stmt, 1, FDateTime::Now().ToIso8601());
-			bind_text(stmt, 2, senderName);
-			bind_text(stmt, 3, senderUniqueId.ToString());
-			sqlite3_bind_int(stmt, 4, senderTeamNum);
-			bind_text(stmt, 5, message);
+			bind_text(stmt, 1, ChatRow.Time);
+			bind_text(stmt, 2, ChatRow.SenderName);
+			bind_text(stmt, 3, ChatRow.SenderUidStr);
+			sqlite3_bind_int(stmt, 4, ChatRow.SenderTeamNum);
+			bind_text(stmt, 5, ChatRow.Message);
 
 			resultCode = sqlite3_step(stmt);
 			if (resultCode != SQLITE_DONE) {
