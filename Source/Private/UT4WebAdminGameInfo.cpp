@@ -2,6 +2,20 @@
 #include "UT4WebAdminGameInfo.h"
 
 
+TSharedPtr<FJsonObject> GetChatInfoJSON(UUT4WebAdminSQLite* _SQLiteServer)
+{
+
+	if (_SQLiteServer != NULL) {
+		TArray<FChatRow> ChatRows;
+		_SQLiteServer->GetChatMessages(ChatRows);
+		return GetChatMessagesJSON(ChatRows);
+	}
+	else {
+		return MakeShareable(new FJsonObject);
+	}
+}
+
+
 TSharedPtr<FJsonObject> GetChatMessagesJSON(TArray<FChatRow>& ChatRows)
 {
 	TSharedPtr<FJsonObject> ChatMessages = MakeShareable(new FJsonObject);
@@ -34,10 +48,12 @@ TSharedPtr<FJsonObject> GetGameRulesetJSON(TWeakObjectPtr<AUTReplicatedGameRules
 	TSharedPtr<FJsonObject> RulesetJson = MakeShareable(new FJsonObject);
 
 	if (GameRuleset != NULL) {
-		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
-		RulesetJson->SetStringField(TEXT("Description"), GameRuleset->Description);
-		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Title);
-		RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
+		RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Data.Title);
+		RulesetJson->SetStringField(TEXT("Description"), GameRuleset->Data.Description);
+		RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->Data.MaxPlayers);
+		//RulesetJson->SetStringField(TEXT("Title"), GameRuleset->Data.Title);
+		//RulesetJson->SetStringField(TEXT("Description"), GameRuleset->Data.Description);
+		//RulesetJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->Data.MaxPlayers);
 
 		TArray<TSharedPtr<FJsonValue>> MapListJson; 
 		// maplist useful to know which map admin can switch to
@@ -350,10 +366,12 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		if (UTGameState->MapVoteList.Num() == 0) {
 			TArray<FString> MapPrefixList;
 			MapPrefixList.Add(UTGameMode->GetMapPrefix());
-			TArray<FAssetData> AllMaps;
 			TArray<FString> MapList;
 
-			UTGameState->ScanForMaps(MapPrefixList, AllMaps);
+			// avoid always scanning
+			if (AllMaps.Num() == 0) {
+				UTGameState->ScanForMaps(MapPrefixList, AllMaps);
+			}
 
 			// Now, go through all of the maps 
 			// TODO cache
@@ -387,8 +405,10 @@ TSharedPtr<FJsonObject> GetInstanceInfoJSON(AUTLobbyMatchInfo* LobbyMatchInfo, A
 		TWeakObjectPtr<AUTReplicatedGameRuleset> GameRuleset = LobbyMatchInfo->CurrentRuleset;
 
 		if (GameRuleset != NULL) {
-			GameInfoJson->SetStringField(TEXT("Title"), GameRuleset->Title);
-			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->MaxPlayers);
+			GameInfoJson->SetStringField(TEXT("Title"), GameRuleset->Data.Title);
+			GameInfoJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->Data.MaxPlayers);
+			//GameInfoJson->SetStringField(TEXT("Title"), GameRuleset->Data.Title);
+			//GameInfoJson->SetNumberField(TEXT("MaxPlayers"), GameRuleset->Data.MaxPlayers);
 		}
 	}
 	else if (UTGameMode && UTGameState) {

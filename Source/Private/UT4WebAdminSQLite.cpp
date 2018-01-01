@@ -62,7 +62,7 @@ void UUT4WebAdminSQLite::Start() {
 		else
 		{
 			UE_LOG(UT4WebAdmin, Warning, TEXT("Failed at opening SQLite DB file %s with SQLite. Error code: %i %s"), *DatabasePath, resultCode, *ResultCodeToMessage(resultCode));
-			UE_LOG(UT4WebAdmin, Warning, TEXT("Some features such as chat logs might not be available."));
+			UE_LOG(UT4WebAdmin, Warning, TEXT("Some features such as chat logs will not be available."));
 		}
 	}
 }
@@ -82,9 +82,14 @@ void UUT4WebAdminSQLite::Stop() {
 
 
 // slightly modified original UTGameInstance.ExecDatabaseCommand
-bool UUT4WebAdminSQLite::ExecDatabaseCommand(const FString& DatabaseCommand, TArray<FDbRow>& DatabaseRows)
+bool UUT4WebAdminSQLite::ExecDatabaseCommandNew(const FString& DatabaseCommand, TArray<FDbRow>& DatabaseRows)
 {
 	int DBreturn = SQLITE_ERROR;
+
+	if (!Database) {
+		FString DatabasePath = FPaths::GamePluginsDir() / UT4WA_PLUGIN_FOLDER / UT4WA_SQL_FOLDER / "UT4WebAdmin.db";
+		sqlite3_open_v2(TCHAR_TO_ANSI(*DatabasePath), &Database, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, nullptr);
+	}
 
 	if (Database)
 	{
@@ -100,6 +105,7 @@ bool UUT4WebAdminSQLite::ExecDatabaseCommand(const FString& DatabaseCommand, TAr
 		DBreturn = sqlite3_prepare_v2(Database, TCHAR_TO_ANSI(*DatabaseCommand), -1, &DatabaseStatement, nullptr);
 		if (DBreturn != SQLITE_OK)
 		{
+			UE_LOG(UT4WebAdmin, Warning, TEXT("Could not close execute query. Error code: %i %s"), DBreturn, *ResultCodeToMessage(DBreturn));
 			return false;
 		}
 
@@ -113,8 +119,14 @@ bool UUT4WebAdminSQLite::ExecDatabaseCommand(const FString& DatabaseCommand, TAr
 				int DBColumnType = sqlite3_column_type(DatabaseStatement, i);
 				if (DBColumnType == SQLITE_TEXT || DBColumnType == SQLITE3_TEXT)
 				{
-					const unsigned char* DBText = sqlite3_column_text(DatabaseStatement, i);
-					NewRow.Text.Add(ANSI_TO_TCHAR((char*)DBText));
+					const char* DBText = (const char*) sqlite3_column_text(DatabaseStatement, i);
+
+					const int32 ConvertedTextLength = FUTF8ToTCHAR_Convert::ConvertedLength(DBText, strlen(DBText));
+					TCHAR* ConvertedText = new TCHAR[ConvertedTextLength];
+					// static FORCEINLINE void Convert(TCHAR* Dest, int32 DestLen, const ANSICHAR* Source, int32 SourceLen)
+					FUTF8ToTCHAR_Convert::Convert(ConvertedText, ConvertedTextLength, DBText, strlen(DBText));
+
+					NewRow.Text.Add(ConvertedText);// ANSI_TO_TCHAR((char*)ConvertedText));
 				}
 				else if (DBColumnType == SQLITE_INTEGER)
 				{
@@ -144,7 +156,8 @@ bool UUT4WebAdminSQLite::GetChatMessages(TArray<FChatRow>& ChatRows) {
 
 	TArray<FDbRow> DatabaseRows;
 	FString Sql = "SELECT time, sender_name, sender_uid, sender_team_num, message FROM `ut4webadmin_chat`;";
-	ExecDatabaseCommand(*Sql, DatabaseRows);
+
+	ExecDatabaseCommandNew(*Sql, DatabaseRows);
 
 	for (int32 RowNum = 0; RowNum < DatabaseRows.Num(); RowNum ++)
 	{
@@ -169,7 +182,7 @@ bool UUT4WebAdminSQLite::GetChatMessages(TArray<FChatRow>& ChatRows) {
 	return false;
 }
 
-void UUT4WebAdminSQLite::SaveChatMessage(const FString& senderName, const FUniqueNetIdRepl& senderUniqueId, int32 senderTeamNum, const FString& message) {
+void UUT4WebAdminSQLite::SaveChatMessage(const FChatRow& ChatRow) {
 
 	if ( Database ) {
 		FString sql = "INSERT INTO `ut4webadmin_chat` (`time`, `sender_name`, `sender_uid`, `sender_team_num`, `message`) VALUES (?, ?, ?, ?, ?);";
@@ -179,11 +192,11 @@ void UUT4WebAdminSQLite::SaveChatMessage(const FString& senderName, const FUniqu
 
 		if (resultCode == SQLITE_OK) {
 
-			bind_text(stmt, 1, FDateTime::Now().ToIso8601());
-			bind_text(stmt, 2, senderName);
-			bind_text(stmt, 3, senderUniqueId.ToString());
-			sqlite3_bind_int(stmt, 4, senderTeamNum);
-			bind_text(stmt, 5, message);
+			bind_text(stmt, 1, ChatRow.Time);
+			bind_text(stmt, 2, ChatRow.SenderName);
+			bind_text(stmt, 3, ChatRow.SenderUidStr);
+			sqlite3_bind_int(stmt, 4, ChatRow.SenderTeamNum);
+			bind_text(stmt, 5, ChatRow.Message);
 
 			resultCode = sqlite3_step(stmt);
 			if (resultCode != SQLITE_DONE) {

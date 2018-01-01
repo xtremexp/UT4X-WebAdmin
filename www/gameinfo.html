@@ -102,8 +102,9 @@
 	getGameInfoData();
 
 	function getGameInfoData(){
+
 		$.ajax({
-			type: "get",
+			type: "GET",
 			url: "/gameinfo",
 			cache: false,
 			success: function(data) {

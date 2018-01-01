@@ -57,6 +57,8 @@ class AUT4WebAdmin : public AUTMutator
 
 	void ModifyLogin_Implementation(UPARAM(ref) FString& Portal, UPARAM(ref) FString& Options) override;
 
+	/* Chat history for current session */
+	TArray<FChatRow> ChatRows;
 
 private:
 	AUTGameMode* GameMode;

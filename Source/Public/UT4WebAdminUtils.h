@@ -6,3 +6,5 @@
 APlayerController* getPlayerControllerByUID(const char* PlayerNetIdC);
 bool KickPlayerByNetId(const char* PlayerNetIdC, const char* ReasonC, bool isBan);
 bool MutePlayerByNetId(const char* PlayerNetIdC, const char* ReasonC);
+
+bool IsGameInstanceServer();

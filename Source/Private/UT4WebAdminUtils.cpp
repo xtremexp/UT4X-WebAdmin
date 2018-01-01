@@ -86,3 +86,12 @@ bool MutePlayerByNetId(const char* PlayerNetIdC, const char* ReasonC)
 
 	return false;
 }
+
+bool IsGameInstanceServer() {
+	if (GWorld != NULL) {
+		AUTBaseGameMode *BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+		return BaseGameMode && BaseGameMode->IsGameInstanceServer();
+	}
+
+	return false;
+}

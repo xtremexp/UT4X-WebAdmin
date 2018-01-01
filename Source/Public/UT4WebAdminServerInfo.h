@@ -4,4 +4,4 @@
 #include "UT4WebAdminBaseInfo.h"
 
 
-TSharedPtr<FJsonObject> GetServerInfoJSON(AUTBaseGameMode* BaseGameMode);
+TSharedPtr<FJsonObject> GetServerInfoJSON();

@@ -1,16 +1,26 @@
 #pragma once
 
+#include "UT4WebAdmin.h"
+
 #if PLATFORM_WINDOWS
 #include "WindowsHWrapper.h"
 #include "AllowWindowsPlatformTypes.h"
 #endif
+
 #include "Core.h"
+#include "CoreMinimal.h"
+#include "HAL/ThreadSafeCounter.h"
+#include "HAL/Runnable.h"
 #include "UnrealTournament.h"
 #include "UTBaseGameMode.h"
 #include "UTLobbyGameMode.h"
 #include "UT4WebAdminUtils.h"
 #include "UT4WebAdminSQLite.h"
-#include "ThirdParty/Libmicrohttpd/include/microhttpd.h"
+
+
+#include "ThirdParty/libWebSockets/include/libwebsockets.h"
+#include "ThirdParty/libWebSockets/include/lws_config.h"
+
 
 #if PLATFORM_WINDOWS
 #include <io.h>
@@ -21,18 +31,27 @@
 #endif
 #include <fcntl.h>
 
-#include "UT4WebAdminHttpServer.generated.h"
+//#include "UT4WebAdminHttpServer.generated.h"
 
-UCLASS(Config=UT4WebAdmin)
-class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
+//UCLASS(Config=UT4WebAdmin)
+class UUT4WebAdminHttpServer 
+	: public FRunnable
 {
-	GENERATED_UCLASS_BODY()
+	//GENERATED_UCLASS_BODY()
+	public:
+		UUT4WebAdminHttpServer(int32 InPort, UUT4WebAdminSQLite* SQLiteServer);
 
-	void Start();
-	void StartWithTLS(uint32 httpPort);
-	void StartWithoutTLS(uint32 httpPort);
-	void Stop();
 
+	public:
+
+	// FRunnable Interface
+	virtual bool Init() override;
+	virtual uint32 Run() override;
+	virtual void Stop() override;
+	virtual void Exit() override;
+
+	// FTickable Interface
+	/*
 	virtual void Tick(float DeltaTime) override;
 	virtual TStatId GetStatId() const override;
 	virtual bool IsTickable() const override
@@ -42,7 +61,13 @@ class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
 	virtual bool IsTickableWhenPaused() const override
 	{
 		return true;
-	}
+	}*/
+
+	static int ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObject> json);
+
+	static int CallBack_HTTP(struct lws *wsi,
+		enum lws_callback_reasons reason, void *user,
+		void *in, size_t len);
 
 	// Main administrator username
 	UPROPERTY(Config)
@@ -72,8 +97,22 @@ class UUT4WebAdminHttpServer : public UObject, public FTickableGameObject
 	/* Reference to SQLite DB */
 	UUT4WebAdminSQLite* _SQLite;
 
+private:
+
+	// Holds the server thread object.
+	FRunnableThread* Thread;
+
+	// Holds a flag indicating whether the thread should stop executing
+	FThreadSafeCounter StopRequested;
+
+	// Is the Listner thread up and running. 
+	FThreadSafeCounter Running;
+
+	// Service Http connections on this thread.
+	FRunnableThread* WorkerThread;
+
 
 private:
-	struct MHD_Daemon *daemon;
+	struct lws_context *Context;
 	AUTBaseGameMode* BaseGameMode;
 };

@@ -20,18 +20,25 @@ void AUT4WebAdmin::Start()
 	// Don't garbage collect me
 	SetFlags(RF_MarkAsRootSet);
 
-	// Init Http Server
-	if (_HttpServer == NULL) {
-		_HttpServer = NewObject<UUT4WebAdminHttpServer>();
-		// http server started in UUT4WebAdminHttpServer.tick() until GWorld is available
-		// to get GWorld.GetAuthMode
-	}
-	
-	
 	// Init SQLite DB
+	// TODO SQLite in separate thread
 	if (_SQLiteServer == NULL) {
 		_SQLiteServer = NewObject<UUT4WebAdminSQLite>();
 		_SQLiteServer->Start();
+	}
+
+	// Init Http Server
+	if (_HttpServer == NULL) {
+		_HttpServer = new UUT4WebAdminHttpServer(8080, _SQLiteServer);// NewObject<UUT4WebAdminHttpServer>(8080, _SQLiteServer);
+
+		/*
+		if (_SQLiteServer != NULL) {
+			//TSharedPtr<UUT4WebAdminSQLite> fuck(_SQLiteServer);
+			_HttpServer->SetSQLiteServer(_SQLiteServer);
+		}*/
+
+		// http server started in UUT4WebAdminHttpServer.tick() until GWorld is available
+		// to get GWorld.GetAuthMode
 	}
 }
 
@@ -65,7 +72,19 @@ bool AUT4WebAdmin::AllowTextMessage_Implementation(FString& Msg, bool bIsTeamMes
 
 		if (_SQLiteServer) {
 			AUTPlayerState* UTPlayerState = Cast<AUTPlayerState>(Sender->PlayerState);
-			_SQLiteServer->SaveChatMessage(UTPlayerState->PlayerName, UTPlayerState->UniqueId, UTPlayerState->GetTeamNum(), *Msg);
+
+			FChatRow ChatRow;
+			ChatRow.Time = FDateTime::Now().ToIso8601();
+			ChatRow.SenderName = UTPlayerState->PlayerName;
+			ChatRow.SenderUidStr = UTPlayerState->UniqueId.ToString();
+			ChatRow.SenderTeamNum = UTPlayerState->GetTeamNum();
+			ChatRow.Message = Msg;
+
+			// save chat for current session game
+			ChatRows.Add(ChatRow);
+
+			// save chat in SQL Lite
+			_SQLiteServer->SaveChatMessage(ChatRow);
 		}
 	}
 
@@ -95,6 +114,6 @@ void AUT4WebAdmin::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (_HttpServer) {
-		_HttpServer->Tick(DeltaTime);
+		//_HttpServer->Tick(DeltaTime);
 	}
 }

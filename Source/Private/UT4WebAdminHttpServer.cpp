@@ -1,7 +1,9 @@
-#include "UT4WebAdmin.h"
+
+//#include "UT4WebAdmin.h"
+//#include "UTBaseGameMode.h"
 #include "UT4WebAdminGameInfo.h"
 #include "UT4WebAdminServerInfo.h"
-#include "UT4WebAdminUtils.h"
+//#include "UT4WebAdminUtils.h"
 
 #define UT4WA_WWW_FOLDER "www"
 
@@ -11,436 +13,406 @@
 #define DENIED "<html><head><title>Acces denied</title></head><body>Access denied</body></html>"
 #define OPAQUE1 "11733b200778ce33060f31c9af70a870ba96ddd4"
 
+/*
+UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(int32 InPort, const UUT4WebAdminSQLite* SQLiteServer)
+	: Super()*/
+/*
 UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-{
+	{
 	// don't garbace collect me
-	SetFlags(RF_MarkAsRootSet);
+	//SetFlags(RF_MarkAsRootSet);
+
+	StopRequested.Reset();
+	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 16 * 1024, TPri_AboveNormal);
+}
+*/
+UUT4WebAdminHttpServer::UUT4WebAdminHttpServer(int32 InPort, UUT4WebAdminSQLite* SQLiteServer)
+{
+	this->WebHttpPort = InPort;
+	this->_SQLite = SQLiteServer;
+
+	StopRequested.Reset();
+	WorkerThread = FRunnableThread::Create(this, TEXT("UUT4WebAdminHttpServer"), 16 * 1024, TPri_AboveNormal);
 }
 
-// Method to serve json file to client
-int serve_json_file(struct MHD_Connection *connection, TSharedPtr<FJsonObject> json)
-{
-	int ret;
-	struct MHD_Response *response;
+const FString wwwStr = FPaths::GamePluginsDir() + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER + "/";
 
+// a object of this type is associated by libwebsocket to every http session.
+struct PerSessionData
+{
+	// data being received.
+	TArray<uint8> In;
+	// data being sent out.
+	TArray<uint8> Out;
+};
+
+
+static struct lws_protocols Protocols[] = {
+	/* first protocol must always be HTTP handler */
+	{ "http-only",
+		UUT4WebAdminHttpServer::CallBack_HTTP,
+		sizeof(struct PerSessionData),
+		15 * 1024,
+		0,
+		NULL
+	},
+	{ NULL, NULL, 0, 0, 0, NULL }
+};
+
+uint32 UUT4WebAdminHttpServer::Run()
+{
+	while (!StopRequested.GetValue())
+	{
+		lws_service(Context, 10);
+		lws_callback_on_writable_all_protocol(Context, &Protocols[0]);
+	}
+
+	UE_LOG(UT4WebAdmin, Log, TEXT("UT4 WebAdmin Http Server is now Shutting down "));
+	return true;
+}
+
+// Called internally by FRunnableThread::Kill.
+void UUT4WebAdminHttpServer::Stop()
+{
+	StopRequested.Set(true);
+}
+
+void UUT4WebAdminHttpServer::Exit()
+{
+	lws_context_destroy(Context);
+	Context = NULL;
+}
+
+
+int UUT4WebAdminHttpServer::ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObject> json)
+{
 	FString JsonText;
 	TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonText);
 	FJsonSerializer::Serialize(json.ToSharedRef(), Writer);
 
 	std::string tmpStr = TCHAR_TO_ANSI(*JsonText);
+	char *jsonChar = &tmpStr[0u];
 
-	char *jsonChar = new char[tmpStr.length() + 1];
-	strcpy_s(jsonChar, sizeof(tmpStr), tmpStr.c_str());
+	char Header[1024];
+	sprintf(Header, "HTTP/1.1 200 OK\x0d\x0a"
+		"Server: UT4Webadmin Server\x0d\x0a"
+		"Connection: close\x0d\x0a"
+		"Content-Type: application/json\x0d\x0a"
+		"Content-Length: %d\x0d\x0a\x0d\x0a", (int) strlen(jsonChar));
 
+	char *Response = NULL;
+	Response = (char *) malloc(strlen(Header) + strlen(jsonChar));
+	sprintf(Response, "%s%s", Header, jsonChar);
 
-	response = MHD_create_response_from_buffer(strlen(jsonChar),
-		(void*)jsonChar, MHD_RESPMEM_PERSISTENT);
-	MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, "application/json");
+	return lws_write_http(wsi, Response, strlen(Response));
 
+	// TODO make it back work
+	/*
 	// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
 	AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
 	if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
-		// TODO set real hostname and port
-		MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
+	// TODO set real hostname and port
+	MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
+	}
+	*/
+}
+
+static char* getMimeFromExtension(char* extension) {
+	char *mime;
+
+	// choose mime type based on the file extension
+	if (extension == NULL) {
+		mime = (char*) "text/plain";
+	}
+	else if (strcmp(extension, ".png") == 0) {
+		mime = (char*) "image/png";
+	}
+	else if (strcmp(extension, ".jpg") == 0) {
+		mime = (char*) "image/jpg";
+	}
+	else if (strcmp(extension, ".gif") == 0) {
+		mime = (char*) "image/gif";
+	}
+	else if (strcmp(extension, ".html") == 0) {
+		mime = (char*) "text/html";
+	}
+	else if (strcmp(extension, ".css") == 0) {
+		mime = (char*) "text/css";
+	}
+	else if (strcmp(extension, ".ico") == 0) {
+		mime = (char*) "image/x-icon";
+	}
+	else {
+		mime = (char*) "text/plain";
 	}
 
-	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	MHD_destroy_response(response);
-
-	return ret;
+	return mime;
 }
 
-static int
-post_iterator(void *cls,
-	enum MHD_ValueKind kind,
-	const char *key,
-	const char *filename,
-	const char *content_type,
-	const char *transfer_encoding,
-	const char *data, uint64_t off, size_t size)
-{
 
-	return MHD_YES;
-}
+int UUT4WebAdminHttpServer::CallBack_HTTP(
+	struct lws *wsi,
+	enum lws_callback_reasons reason,
+	void *user,
+	void *in, 
+	size_t len
+) {
 
-int handle_chat(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
+	PerSessionData* BufferInfo = (PerSessionData*) user;
+	struct lws_context *Context = lws_get_context(wsi);
+	UUT4WebAdminHttpServer* Server = (UUT4WebAdminHttpServer*)lws_context_user(Context);
 
-	// only get current chat for the moment
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
+	switch (reason) {
 
-		TArray<FChatRow> ChatRows;
-		/*
-		if (_SQLite) {
-			_SQLite->GetChatMessages(ChatRows);
-		}*/
-		TSharedPtr<FJsonObject> chatInfoJson = GetChatMessagesJSON(ChatRows);
-		return serve_json_file(connection, chatInfoJson);
+
+	case LWS_CALLBACK_HTTP: {
+
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 2); // TODO useful? delete?
+
+		char *requested_uri = (char *)in;
+
+		// not a post request
+		if (!lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)) {
+
+
+			char *path = NULL;
+			const char *www = TCHAR_TO_ANSI(*wwwStr);
+
+			// server index.html file
+			if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/")) == 0)
+			{
+				requested_uri = (char*) "index.html";
+			}
+			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/gameinfo")) == 0) {
+				TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
+				ServeJsonObject(wsi, matchInfoJson);
+				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+				break;
+			}
+			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/serverinfo")) == 0) {
+
+				TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON();
+				ServeJsonObject(wsi, serverInfoJson);
+				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+				break;
+			}
+			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/chatinfo")) == 0) {
+				TSharedPtr<FJsonObject> chatInfoJson = GetChatInfoJSON(Server->_SQLite);
+				ServeJsonObject(wsi, chatInfoJson);
+				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+				break;
+			}
+
+			// serving normal file
+			path = (char *)malloc(strlen(www) + strlen(requested_uri));
+
+			sprintf(path, "%s%s", www, requested_uri);
+
+
+			// FIXME SEC prevent reading files not in UT4XWebAdmin www folder
+			char *extension = strrchr(path, '.');
+
+			lws_serve_http_file(wsi, path, getMimeFromExtension(extension), NULL, 0);
+		}
+		// not handled yet
+		else
+		{
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" POST REQUEST !!!"));
+			// we got a post request!, queue up a write callback.
+			lws_callback_on_writable(wsi);
+		}
+
+		//lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+		break;
 	}
-	// TODO chat from webadmin to players/hub/....
-
-	return MHD_NO;
-}
-
-int handle_game_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	const char* action;
 	
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
-		action = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "action");
-		
-
-		FString FAction = FString(action);
-		
-
-		if (FAction.IsEmpty()) {
-			TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
-			return serve_json_file(connection, matchInfoJson);
-		}
-		else {
-			const char* playerId;
-			const char* message;
-			const char* isBan;
-
-			// TODO handle ban/kick removal
-			playerId = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "playerid");
-			message = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "message");
-			isBan = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "isban");
-
-			FString FPlayerId = FString(playerId);
-			struct MHD_Response *response;
-
-			if (FAction == "kick") {
-
-				bool bBan = (strcmp(isBan, "true") == 0);
-				bool kicked = KickPlayerByNetId(playerId, message, bBan);
-				const char* html;
-
-				if (kicked) {
-					if (bBan) {
-						html = "Player has been banned !";
-					}
-					else {
-						html = "Player has been kicked !";
-					}
-				}
-				else {
-					html = "<html><body>Player was not kicked!</body></html>";
-				}
-
-				response = MHD_create_response_from_buffer(strlen(html), (void*)html, MHD_RESPMEM_PERSISTENT);
-
-				// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
-				AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-				if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
-					// TODO set real hostname and port
-					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
-				}
-
-				int ret =  MHD_queue_response(connection, MHD_HTTP_OK, response);
-				MHD_destroy_response(response);
-				return ret;
-			}
-			else {
-				const char *notExist = "<html><body>Invalid action type</body></html>";
-				response = MHD_create_response_from_buffer(strlen(notExist), (void*)notExist, MHD_RESPMEM_PERSISTENT);
-				return MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
-			}
-
-			return MHD_NO;
-		}
-		
+	case LWS_CALLBACK_HTTP_BODY: {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" INCOMING POST REQUEST !!!"));
+		// post data is coming in, push it on to our incoming buffer.
+		//UE_LOG(LogFileServer, Log, TEXT("Incoming HTTP Partial Body Size %d, total size  %d"), Len, Len + BufferInfo->In.Num());
+		// FIXME BufferInfo crashing
+		//BufferInfo->In.Append((uint8*) in, len);
+		// we received some data - update time out.
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
+		break;
 	}
-	else  if (strcmp(method, MHD_HTTP_METHOD_POST) == 0){
-
-	}
-
-	return MHD_NO;
-}
-
-
-int handle_server_info(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	if (strcmp(method, MHD_HTTP_METHOD_GET) == 0) {
-		AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-		TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON(BaseGameMode);
-		return serve_json_file(connection, serverInfoJson);
-	}
-
-	return MHD_NO;
-}
-
-// Server files from root folder
-const FString wwwStr = FPaths::GamePluginsDir() + UT4WA_PLUGIN_FOLDER + "/" + UT4WA_WWW_FOLDER + "/";
-
-
-int handle_serve_file(void *cls,
-	struct MHD_Connection *connection,
-	const char *url,
-	const char *method, // GET / POST / PUT ...
-	const char *version, // HTML version 1.1
-	const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	struct MHD_Response *response;
-	char *path = NULL;
-	int ret;
-
-	// redirect from http://myserver:port/ to http://myserver:port/index.html
-	if (strcmp(url, "/") == 0) {
-		path = "index.html";
-	}
-
-	if (NULL == path) {
-		path = new char[strlen(&url[1]) + 1];
-		strcpy_s(path, sizeof(&url[1]), &url[1]);
-	}
-
-	const char *www = TCHAR_TO_ANSI(*wwwStr);
-
-	// calculate the required buffer size (also accounting for the null terminator):
-	int bufferSize = strlen(www) + strlen(path) + 1;
-
-	// allocate enough memory for the concatenated string:
-	char* concatString = new char[bufferSize];
-
-	// copy strings one and two over to the new buffer:
-	strcpy_s(concatString, sizeof(www), www);
-	strcat_s(concatString, sizeof(concatString) + sizeof(path), path);
-
-
-	FILE* f = nullptr;
-	fopen_s(&f, concatString, "rb");
-
-	if (f != NULL) {
-		int fd = _open(concatString, O_RDONLY);
-
-		// Determine file size
-		fseek(f, 0, SEEK_END);
-		size_t size = ftell(f);
-		response = MHD_create_response_from_fd(size, fd);
-
-		fclose(f);
-		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	}
-	else {
-		const char *notExist = "<html><body>File not found !</body></html>";
-		response = MHD_create_response_from_buffer(strlen(notExist),
-			(void*)notExist, MHD_RESPMEM_PERSISTENT);
-		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
-	}
-
-	MHD_destroy_response(response);
-	return ret;
-}
-
-int answer_to_connection(void *cls,
-	struct MHD_Connection *connection,
-	const char *url,
-	const char *method, // GET / POST / PUT ...
-	const char *version, // HTML version 1.1
-	const char *upload_data,
-	size_t *upload_data_size, void **con_cls)
-{
-	#ifndef IS_DEBUG
-	struct MHD_Response *response;
-	char *username;
-	const char *realm = "someusername";
-	const char *password = "somepassword";
-	username = MHD_digest_auth_get_username(connection);
-
-	// username authentification
-	if (NULL == username) {
-		response = MHD_create_response_from_buffer(strlen(DENIED), DENIED, MHD_RESPMEM_PERSISTENT);
-		ret = MHD_queue_auth_fail_response(connection, realm,
-			realm,
-			response,
-			MHD_NO);
-		MHD_destroy_response(response);
-		return ret;
-	}
-
-	// check username / password OK
-	ret = MHD_digest_auth_check(connection, realm,
-		username,
-		password,
-		300);
-
-	FString usernameFStr = ANSI_TO_TCHAR(username);
-
-	// bad username / password return invalid authentification
-	if ((ret == MHD_INVALID_NONCE) ||
-		(ret == MHD_NO))
+								 
+	// POST REQUEST ENDED FROM CLIENT
+	// SEND BACK
+	case LWS_CALLBACK_HTTP_BODY_COMPLETION:
 	{
-		response = MHD_create_response_from_buffer(strlen(DENIED),
-			DENIED,
-			MHD_RESPMEM_PERSISTENT);
-		if (NULL == response)
-			return MHD_NO;
-		ret = MHD_queue_auth_fail_response(connection, realm,
-			OPAQUE1,
-			response,
-			(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
-		MHD_destroy_response(response);
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" INCOMING LWS_CALLBACK_HTTP_BODY_COMPLETION REQUEST !!!"));
+		// we have all the post data from the client.
+		// create archives and process them.
+		UE_LOG(UT4WebAdmin, Log, TEXT("Incoming HTTP total size  %d"), BufferInfo->In.Num());
+		FMemoryReader Reader(BufferInfo->In);
+		TArray<uint8> Writer;
 
-		//UE_LOG(UT4WebAdmin, Warning, TEXT("User '%s' failed to authenticate."), *usernameFStr);
-		return ret;
-	}
-	else {
-		//UE_LOG(UT4WebAdmin, Log, TEXT("User '%s' authenticated."), *usernameFStr);
-	}
-	#endif
+		//FNetworkFileServerHttp::Process(Reader, Writer, Server);
 
-	// USER AUTHENTICATED LET'S GO !
+		ANSICHAR Json[1024];
+		int LengthJson = FCStringAnsi::Sprintf(
+			(ANSICHAR*)Json,
+			"{json:sucess,\r\ndata:'fuck'}"//,
+											  //Writer.Num()
+		);
 
-	// only handle get/post/head
-	if ((0 != strcmp(method, MHD_HTTP_METHOD_GET)) && (0 != strcmp(method, MHD_HTTP_METHOD_HEAD)) && (0 != strcmp(method, MHD_HTTP_METHOD_POST))) {
-		return MHD_NO;
+		// even if we have 0 data to push, tell the client that we don't any data.
+		ANSICHAR Header[1024];
+		int Length = FCStringAnsi::Sprintf(
+			(ANSICHAR*)Header,
+			"HTTP/1.1 200 OK\x0d\x0a"
+			"Server: Unreal File Server\x0d\x0a"
+			"Connection: close\x0d\x0a"
+			"Content-Type: application/json\x0d\x0a",
+			//"Content-Type: application/octet-stream \x0d\x0a",
+			"Content-Length: %d\x0d\x0a\x0d\x0a",
+			LengthJson
+			//Writer.Num()
+		);
+
+		
+
+		// Add Http Header
+		BufferInfo->Out.Append((uint8*)Header, Length);
+		// Add Binary Data.
+		BufferInfo->Out.Append((uint8*)Json, LengthJson);
+
+		// we have enqueued data increase timeout and push a writable callback.
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
+		lws_callback_on_writable(wsi);
+
+		break;
 	}
 
-	if (strcmp(url, "/gameinfo") == 0) {
-		return handle_game_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+	case LWS_CALLBACK_CLOSED_HTTP: {
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_CLOSED_HTTP"));
+
+
+		// client went away or
+		//clean up.
+		BufferInfo->In.Empty();
+		BufferInfo->Out.Empty();
+
+		break;
 	}
-	else if (strcmp(url, "/serverinfo") == 0) {
-		return handle_server_info(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+
+	case LWS_CALLBACK_PROTOCOL_DESTROY: {
+		// we are going away.
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_PROTOCOL_DESTROY"));
+		break;
 	}
-	else if (strcmp(url, "/chat") == 0) {
-		return MHD_NO;//return handle_chat(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+
+	case LWS_CALLBACK_HTTP_WRITEABLE: {
+
+		// get rid of superfluous write callbacks.
+		if (BufferInfo == NULL)
+			break;
+
+		// we have data o send out.
+		if (BufferInfo->Out.Num())
+		{
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_HTTP_WRITEABLE"));
+			int SentSize = lws_write(wsi, (unsigned char*)BufferInfo->Out.GetData(), BufferInfo->Out.Num(), LWS_WRITE_HTTP);
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" Sent bytes: %d"), SentSize);
+			// get rid of the data that has been sent.
+			BufferInfo->Out.RemoveAt(0, SentSize);
+		}
+
+		break;
 	}
-	else {
-		return handle_serve_file(cls, connection, url, method, version, upload_data, upload_data_size, con_cls);
+
+	default:
+		break;
 	}
+
+
+	return 0;
 }
 
 
-void UUT4WebAdminHttpServer::StartWithTLS(uint32 httpPort)
+
+void lws_debugLog(int level, const char *line)
 {
-	if (NULL == *WebServerCertificateFile || NULL == *WebServerKeyFile) {
-		UE_LOG(UT4WebAdmin, Warning, TEXT("Server key or certificate file is not set."));
-		return;
-	}
-
-	// openssl req -days 365 -out server.pem -new -x509 -key server.key
-	FILE* fcert_file = nullptr;
-	fopen_s(&fcert_file, TCHAR_TO_ANSI(*WebServerCertificateFile), "r");
-
-	// openssl genrsa -out server.key 1024
-	FILE* fkey_file = nullptr;
-	fopen_s(&fkey_file, TCHAR_TO_ANSI(*WebServerKeyFile), "r");
-
-	if (NULL != fcert_file && NULL != fkey_file) {
-
-		fseek(fcert_file, 0, SEEK_END);
-		size_t size = ftell(fcert_file);
-		char* cert_pem = new char[size];
-		rewind(fcert_file);
-		fread(cert_pem, sizeof(char), size, fcert_file);
-
-
-		fseek(fkey_file, 0, SEEK_END);
-		size_t size2 = ftell(fkey_file);
-		char* key_pem = new char[size2];
-		rewind(fkey_file);
-		fread(key_pem, sizeof(char), size2, fkey_file);
-
-		daemon = MHD_start_daemon(MHD_USE_AUTO | MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_DEBUG, httpPort, NULL, NULL,
-			&answer_to_connection, NULL,
-			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
-			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-			MHD_OPTION_END);
-	}
-
-
-	if (NULL != fcert_file) {
-		fclose(fcert_file);
-	}
-
-	if (NULL != fkey_file) {
-		fclose(fkey_file);
-	}
+	UE_LOG(UT4WebAdmin, Warning, TEXT(" LibWebsocket: %s"), ANSI_TO_TCHAR(line));
 }
 
+bool started = false;
+bool startIt = false;
 
-void UUT4WebAdminHttpServer::StartWithoutTLS(uint32 httpPort)
+bool UUT4WebAdminHttpServer::Init()
 {
-	daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG, httpPort, NULL, NULL,
-		&answer_to_connection, NULL, MHD_OPTION_END);
-}
+	startIt = true;
 
-void UUT4WebAdminHttpServer::Start()
-{
-	// should not occurs at this stage but who knows ...
-	if (GWorld == NULL) {
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" Impossible to start UT4WebAdmin - GWorld is NULL."));
-		return;
+	// FIXME for some unknow reason the init function is called 3 times then it crashes
+	// this 'trick' prevents the crash
+	if (started) {
+		return false;
 	}
 
-	BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
+	started = true;
 
-	bool IsGameInstanceServer = BaseGameMode->IsGameInstanceServer();
+	struct lws_context_creation_info ContextInfo = {};
 
-	int httpPort = WebHttpPort;
+	lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_DEBUG, lws_debugLog);
 
-	if (httpPort == 0) {
-		httpPort = 8080;
+	if (WebHttpPort == 0) {
+		WebHttpPort = 8080;
 	}
 
-	// for lobby instance server open http port at (instance port + 100)
-	if (IsGameInstanceServer) {
+	bool isGameInstance = IsGameInstanceServer();
+
+	if (isGameInstance) {
+		WebHttpPort += 100;
+		/*
 		FString addressUrl = GWorld->GetAddressURL();
 
 		TArray<FString> PathItemList;
-		addressUrl.ParseIntoArray(PathItemList, TEXT(":"), /*InCullEmpty=*/true);
+		// get current port from master server
+		addressUrl.ParseIntoArray(PathItemList, TEXT(":"), true);
 
-		httpPort = FCString::Atoi(*PathItemList[PathItemList.Num() - 1]) + 100;
+		WebHttpPort = FCString::Atoi(*PathItemList[PathItemList.Num() - 1]) + 100;
+		*/
 	}
 
-	// SSL not working yet need some more investigation
-	if (WebHttpsEnabled && !IsGameInstanceServer) {
-		StartWithTLS(httpPort);
-	}
-	else {
-		StartWithoutTLS(httpPort);
-	}
-	
 
-	if (daemon == NULL) {
+	ContextInfo.port = WebHttpPort;
+	ContextInfo.iface = NULL;
+	ContextInfo.protocols = Protocols;
+	ContextInfo.uid = -1;
+	ContextInfo.gid = -1;
+	ContextInfo.options = 0;
+	ContextInfo.user = this;
+	ContextInfo.extensions = NULL;
+
+	// disabled - FIXME http server won't work properly if enabled
+	/*
+	if (WebHttpsEnabled && !isGameInstance) {
+		//ContextInfo.port = 443;
+		ContextInfo.ssl_cert_filepath = "D:\\server_certificate.pem";
+		ContextInfo.ssl_private_key_filepath = "D:\\server_key.pem";
+		ContextInfo.ssl_cipher_list =  nullptr;
+		ContextInfo.options |= LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT;
+	}*/
+
+	//ContextInfo.options |= LWS_SERVER_OPTION_VALIDATE_UTF8;
+
+
+	Context = lws_create_context(&ContextInfo);
+
+	if (Context == NULL) {
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" UT4WebAdmin failed to start http(s) server at port: %i "), httpPort);
+		UE_LOG(UT4WebAdmin, Warning, TEXT(" UT4WebAdmin failed to start http(s) server at port: %i "), WebHttpPort);
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
+		return false;
 	}
 	else {
 		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
-		UE_LOG(UT4WebAdmin, Log, TEXT(" UT4WebAdmin started at port: %i "), httpPort);
+		UE_LOG(UT4WebAdmin, Log, TEXT(" UT4WebAdmin started at port: %i "), WebHttpPort);
 		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
 	}
-}
 
-void UUT4WebAdminHttpServer::Stop()
-{
-	if (NULL != daemon) {
-		MHD_stop_daemon(daemon);
-	}
-}
-bool started = false;
-
-// Start HTTPs server when GWorld available
-void UUT4WebAdminHttpServer::Tick(float DeltaTime)
-{
-	if (!started && GWorld != NULL && NULL == daemon) {
-		started = true;
-		Start();
-	}
-	else {
-		// TODO poll
-	}
-}
-
-TStatId UUT4WebAdminHttpServer::GetStatId() const
-{
-	RETURN_QUICK_DECLARE_CYCLE_STAT(UUT4WebAdminHttpServer, STATGROUP_Tickables);
+	//Ready.Set(true);
+	return true;
 }
