@@ -9,9 +9,14 @@ var ut4waApp = angular.module('ut4waApp', [])
 
 	var isDebug = (getSearchParams('isdebug') != null);
 
+	var urlChat = "/chatinfo";
+	// FIX ME chatinfo service crashing after json server so temp hack
+	urlChat = "/js/chatinfo-test.json";
 	var url = "/gameinfo";
+	
 	if(isDebug){
 		url = "/js/gameinfo-test.json";
+		urlChat = "/js/chatinfo-test.json";
 	}
 	
 	$scope.toMinutesSec = function(seconds){
@@ -79,6 +84,13 @@ var ut4waApp = angular.module('ut4waApp', [])
 		}
 	}
   
+  $http.get(urlChat).then(function(response) {
+	  $scope.ChatRows = response.data.ChatRows;
+  }, function(error) {
+	// TODO HANDLE
+  });
+  
+
 	$http.get(url).then(function(response) {
 		console.log(response.data);
         
@@ -86,6 +98,7 @@ var ut4waApp = angular.module('ut4waApp', [])
 		$scope.DataFromDedi = !response.data.data.IsLobbyServer;
 		$scope.hasMatches = (response.data.data.NumMatches > 0);
 		
+		$scope.WaitingPlayersInHub = response.data.data.WaitingPlayersInHub;
 		$scope.GameInstances = response.data.data.GameInstances;
 		
 		for(var i=0; i<$scope.GameInstances.length; i++){
