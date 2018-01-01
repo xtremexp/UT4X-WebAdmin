@@ -95,27 +95,29 @@ int UUT4WebAdminHttpServer::ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObj
 	char *jsonChar = &tmpStr[0u];
 
 	char Header[1024];
-	sprintf(Header, "HTTP/1.1 200 OK\x0d\x0a"
-		"Server: UT4Webadmin Server\x0d\x0a"
-		"Connection: close\x0d\x0a"
-		"Content-Type: application/json\x0d\x0a"
-		"Content-Length: %d\x0d\x0a\x0d\x0a", (int) strlen(jsonChar));
+
+	if (IsGameInstanceServer()) {
+		sprintf(Header, "HTTP/1.1 200 OK\x0d\x0a"
+			"Server: UT4Webadmin Server\x0d\x0a"
+			"Connection: close\x0d\x0a"
+			"Content-Type: application/json\x0d\x0a"
+			// allow http parent hub server to query json to child hub instance server
+			"Access-Control-Allow-Origin: http://localhost:8080" // TODO use real server hostname and configured port
+			"Content-Length: %d\x0d\x0a\x0d\x0a", (int)strlen(jsonChar));
+	}
+	else {
+		sprintf(Header, "HTTP/1.1 200 OK\x0d\x0a"
+			"Server: UT4Webadmin Server\x0d\x0a"
+			"Connection: close\x0d\x0a"
+			"Content-Type: application/json\x0d\x0a"
+			"Content-Length: %d\x0d\x0a\x0d\x0a", (int)strlen(jsonChar));
+	}
 
 	char *Response = NULL;
 	Response = (char *) malloc(strlen(Header) + strlen(jsonChar));
 	sprintf(Response, "%s%s", Header, jsonChar);
 
 	return lws_write_http(wsi, Response, strlen(Response));
-
-	// TODO make it back work
-	/*
-	// allow cross request from instanced http server http://<hostname>:(<InstancePort>+100) to lobby parent
-	AUTBaseGameMode* BaseGameMode = Cast<AUTBaseGameMode>(GWorld->GetAuthGameMode());
-	if (BaseGameMode && BaseGameMode->IsGameInstanceServer()) {
-	// TODO set real hostname and port
-	MHD_add_response_header(response, MHD_HTTP_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:8080");
-	}
-	*/
 }
 
 static char* getMimeFromExtension(char* extension) {
