@@ -1,0 +1,68 @@
+{
+	"ChatRows": [
+		{
+			"Message": "hi!",
+			"SenderName": "Winter",
+			"SenderTeamNum": 0,
+			"SenderUidStr": "e42525c40d4441c3b0dfa59dfd21a408",
+			"Time": "2017-08-19T11:57:48.541Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "Hello.",
+			"SenderName": "Summer",
+			"SenderTeamNum": 1,
+			"SenderUidStr": "0dfa59dfd21a408e42525c40d4441c3b",
+			"Time": "2017-08-19T11:57:50.839Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "Nice shot",
+			"SenderName": "Winter",
+			"SenderTeamNum": 0,
+			"SenderUidStr": "e42525c40d4441c3b0dfa59dfd21a408",
+			"Time": "2017-08-19T11:57:54.391Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "Ty! Just lucky one.",
+			"SenderName": "Summer",
+			"SenderTeamNum": 1,
+			"SenderUidStr": "0dfa59dfd21a408e42525c40d4441c3b",
+			"Time": "2017-12-31T09:29:09.593Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "How is going the webadmin interface so far?",
+			"SenderName": "Summer",
+			"SenderTeamNum": 1,
+			"SenderUidStr": "0dfa59dfd21a408e42525c40d4441c3b",
+			"Time": "2017-12-31T09:29:15.013Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "Good. I'm currently testing.",
+			"SenderName": "Winter",
+			"SenderTeamNum": 0,
+			"SenderUidStr": "e42525c40d4441c3b0dfa59dfd21a408",
+			"Time": "2017-12-31T09:29:20.772Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "Good game",
+			"SenderName": "Summer",
+			"SenderTeamNum": 0,
+			"SenderUidStr": "0dfa59dfd21a408e42525c40d4441c3b",
+			"Time": "2017-12-31T10:02:51.753Z",
+			"SessionName": ""
+		},
+		{
+			"Message": "bb",
+			"SenderName": "Winter",
+			"SenderTeamNum": 0,
+			"SenderUidStr": "e42525c40d4441c3b0dfa59dfd21a408",
+			"Time": "2017-12-31T10:03:04.125Z",
+			"SessionName": ""
+		}
+	]
+}

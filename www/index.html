@@ -75,7 +75,13 @@
 							<!-- Less info and less reliable data since it's partial data and replicated from instanced server to lobby -->
 							<div class="panel panel-primary">
 							  <div class="panel-heading">
-								<h3 class="panel-title">{{lobbyInstance.ServerName}} - {{lobbyInstance.GameInfo.Title}} - {{lobbyInstance.MatchState}} - {{lobbyInstance.NumPlayers}} / {{lobbyInstance.MaxPlayers}} player(s)</h3>
+								<h3 class="panel-title">{{lobbyInstance.ServerName}}
+									<span>- {{lobbyInstance.GameInfo.Title}}</span>
+									<span>- {{lobbyInstance.MatchState}}</span>
+									<span>- {{lobbyInstance.NumPlayers}} / {{lobbyInstance.MaxPlayers}} players</span>
+									<span>- {{toMinutesSec(lobbyInstance.ElapsedTime)}} / {{toMinutesSec(lobbyInstance.TimeLimit)}}</span>
+								</h3>
+								<h4>I am testing</h4>
 							  </div>
 							  <div class="panel-body">
 								<div>
@@ -93,12 +99,36 @@
 										  </div>
 										</div>
 									  </div>
-										<div>
+										<div class="col-md-8">
+											<!-- TIME INFO -->
 											<div>
-												<h1>Time: {{toMinutesSec(lobbyInstance.ElapsedTime)}} / {{toMinutesSec(lobbyInstance.TimeLimit)}}</h1>
+											<!--
+												<span>Time: {{toMinutesSec(lobbyInstance.ElapsedTime)}} / {{toMinutesSec(lobbyInstance.TimeLimit)}}</span>
+												-->
+												<div ng-if="lobbyInstance.GoalScore > 0">
+													<h1>Goal Score: {{lobbyInstance.GoalScore}}</h1>
+												</div>
 											</div>
-											<div ng-if="lobbyInstance.GoalScore > 0">
-												<h1>Goal Score: {{lobbyInstance.GoalScore}}</h1>
+											<!-- CHAT -->
+											<!-- TODO CHAT by Instance ID -->
+											<div>
+												<table class="table">
+													<tbody>
+														<tr ng-repeat="chatRow in ChatRows" ng-class="{ 'redTeam': (chatRow.SenderTeamNum == 0), 'blueTeam': (chatRow.SenderTeamNum == 1), 'specTeam': chatRow.SenderTeamNum == 255 }">
+															<td>{{chatRow.Time}}</td>
+															<td>{{chatRow.SenderName}}</td>
+															<td>{{chatRow.Message}}</td>
+														</tr>
+													</tbody>
+													<tfoot>
+														<tr>
+															<td colspan="3">
+																<input type="text" id="message" style="color: black; width: 90%; float: left;" required>
+																<button onclick="sendChat(document.getElementById('message').value);">Send</button>
+															</td>
+														</tr>
+													</tfoot>
+												</table>
 											</div>
 										</div>
 									</div>
@@ -154,6 +184,7 @@
 					</div>
 				</div>
 			</div>
+			<button onclick="testPost()">TESTPOST</button>
 		</div>
 
 		
@@ -161,6 +192,22 @@
 			$( document ).ready(function() {
 				loadServerInfo();
 			});
+			
+			function sendChat(message){
+			
+				console.log('Sending message ...');
+			
+				var data = {
+					action: 'chat',
+					message: message
+				}
+			
+				$.post('/chat', data, 
+					function(d){
+						console.log('it succeeded:');
+						console.log(d);
+					});
+			}
 		
 			function loadPage(page)
 			{
@@ -183,6 +230,22 @@
 					$('#server_description').html(data.ServerDescription);
 				});
 			}
+			
+			var d = {
+				action: 'ban',
+				data: 'badplayer'
+			}
+			
+			var testPost = function(){
+				console.log('testing post ...');
+				
+				$.post('/fuck', d, 
+					function(data){
+						console.log('it succeeded:');
+					});
+			};
+			
+			
 		</script>
 	</body>
 </html>
