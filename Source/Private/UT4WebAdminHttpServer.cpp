@@ -60,15 +60,22 @@ static struct lws_protocols Protocols[] = {
 	{ NULL, NULL, 0, 0, 0, NULL }
 };
 
+bool started = false;
+bool startIt = false;
+
 uint32 UUT4WebAdminHttpServer::Run()
 {
+
 	while (!StopRequested.GetValue())
 	{
-		lws_service(Context, 10);
+		// see https://libwebsockets.org/lws-api-doc-master/html/group__service.html#gaf95bd0c663d6516a0c80047d9b1167a8
+		// 0 = timeout in ms, with 10ms timeout webadmin is kinda very slow sometimes (up to 10s to get response)
+		// might be change to a larger value if it impacts performances
+		lws_service(Context, 0);
 		lws_callback_on_writable_all_protocol(Context, &Protocols[0]);
 	}
 
-	UE_LOG(UT4WebAdmin, Log, TEXT("UT4 WebAdmin Http Server is now Shutting down "));
+	
 	return true;
 }
 
@@ -76,6 +83,12 @@ uint32 UUT4WebAdminHttpServer::Run()
 void UUT4WebAdminHttpServer::Stop()
 {
 	StopRequested.Set(true);
+	if (WorkerThread)
+	{
+		WorkerThread->Kill(true);
+		delete WorkerThread;
+		WorkerThread = NULL;
+	}
 }
 
 void UUT4WebAdminHttpServer::Exit()
@@ -170,7 +183,8 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 
 	case LWS_CALLBACK_HTTP: {
 
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 2); // TODO useful? delete?
+		// hang on to socket even if there's no data for atleast 60 secs.
+		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
 
 		char *requested_uri = (char *)in;
 
@@ -234,7 +248,7 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 		// post data is coming in, push it on to our incoming buffer.
 		//UE_LOG(LogFileServer, Log, TEXT("Incoming HTTP Partial Body Size %d, total size  %d"), Len, Len + BufferInfo->In.Num());
 		// FIXME BufferInfo crashing
-		//BufferInfo->In.Append((uint8*) in, len);
+		BufferInfo->In.Append((uint8*) in, len);
 		// we received some data - update time out.
 		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
 		break;
@@ -340,8 +354,7 @@ void lws_debugLog(int level, const char *line)
 	UE_LOG(UT4WebAdmin, Warning, TEXT(" LibWebsocket: %s"), ANSI_TO_TCHAR(line));
 }
 
-bool started = false;
-bool startIt = false;
+
 
 bool UUT4WebAdminHttpServer::Init()
 {
@@ -400,7 +413,6 @@ bool UUT4WebAdminHttpServer::Init()
 
 	//ContextInfo.options |= LWS_SERVER_OPTION_VALIDATE_UTF8;
 
-
 	Context = lws_create_context(&ContextInfo);
 
 	if (Context == NULL) {
@@ -415,6 +427,5 @@ bool UUT4WebAdminHttpServer::Init()
 		UE_LOG(UT4WebAdmin, Log, TEXT(" * * * * * * * * * * * * * * * * * * * * * * *"));
 	}
 
-	//Ready.Set(true);
 	return true;
 }
