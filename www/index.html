@@ -115,9 +115,9 @@
 												<table class="table">
 													<tbody>
 														<tr ng-repeat="chatRow in ChatRows" ng-class="{ 'redTeam': (chatRow.SenderTeamNum == 0), 'blueTeam': (chatRow.SenderTeamNum == 1), 'specTeam': chatRow.SenderTeamNum == 255 }">
-															<td>{{chatRow.Time}}</td>
 															<td>{{chatRow.SenderName}}</td>
 															<td>{{chatRow.Message}}</td>
+															<td>{{chatRow.Time | date:'HH:mm:ss'}}</td>
 														</tr>
 													</tbody>
 													<tfoot>

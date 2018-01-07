@@ -133,36 +133,43 @@ int UUT4WebAdminHttpServer::ServeJsonObject(struct lws *wsi, TSharedPtr<FJsonObj
 	return lws_write_http(wsi, Response, strlen(Response));
 }
 
-static char* getMimeFromExtension(char* extension) {
-	char *mime;
+/*
+Returns mimetype from file extension.
+Any file without its extension listed here won't be served by http server.
+*/
+const char* getMimeFromExtension(char* extension) {
 
 	// choose mime type based on the file extension
 	if (extension == NULL) {
-		mime = (char*) "text/plain";
-	}
-	else if (strcmp(extension, ".png") == 0) {
-		mime = (char*) "image/png";
-	}
-	else if (strcmp(extension, ".jpg") == 0) {
-		mime = (char*) "image/jpg";
-	}
-	else if (strcmp(extension, ".gif") == 0) {
-		mime = (char*) "image/gif";
-	}
-	else if (strcmp(extension, ".html") == 0) {
-		mime = (char*) "text/html";
-	}
-	else if (strcmp(extension, ".css") == 0) {
-		mime = (char*) "text/css";
-	}
-	else if (strcmp(extension, ".ico") == 0) {
-		mime = (char*) "image/x-icon";
-	}
-	else {
-		mime = (char*) "text/plain";
+		return NULL;
 	}
 
-	return mime;
+	if (strcmp(extension, ".png") == 0) {
+		return (char*) "image/png";
+	}
+	else if (strcmp(extension, ".jpg") == 0) {
+		return (char*) "image/jpg";
+	}
+	else if (strcmp(extension, ".gif") == 0) {
+		return (char*) "image/gif";
+	}
+	else if (strcmp(extension, ".html") == 0) {
+		return (char*) "text/html";
+	}
+	else if (strcmp(extension, ".css") == 0) {
+		return (char*) "text/css";
+	}
+	else if (strcmp(extension, ".ico") == 0) {
+		return (char*) "image/x-icon";
+	}
+	else if (strcmp(extension, ".js") == 0) {
+		return (char*) "application/js";
+	}
+	else if (strcmp(extension, ".json") == 0) {
+		return (char*) "application/json";
+	}
+
+	return NULL;
 }
 
 
@@ -177,91 +184,100 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 	PerSessionData* BufferInfo = (PerSessionData*) user;
 	struct lws_context *Context = lws_get_context(wsi);
 	UUT4WebAdminHttpServer* Server = (UUT4WebAdminHttpServer*)lws_context_user(Context);
+	const char *mimetype;
 
 	switch (reason) {
 
 
+	// "an http request has come from a client that is not asking to upgrade the connection to a websocket one"
 	case LWS_CALLBACK_HTTP: {
 
+		if (len < 1) {
+			lws_return_http_status(wsi,
+				HTTP_STATUS_BAD_REQUEST, NULL);
+			goto try_to_reuse;
+		}
+
+		/* if a legal POST URL, let it continue and accept data */
+		if (lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)) {
+			return 0;
+		}
+
 		// hang on to socket even if there's no data for atleast 60 secs.
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
+		//lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
 
 		char *requested_uri = (char *)in;
 
-		// not a post request
-		if (!lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)) {
+		char *path = NULL;
+		const char *www = TCHAR_TO_ANSI(*wwwStr);
 
-
-			char *path = NULL;
-			const char *www = TCHAR_TO_ANSI(*wwwStr);
-
-			// server index.html file
-			if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/")) == 0)
-			{
-				requested_uri = (char*) "index.html";
-			}
-			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/gameinfo")) == 0) {
-				TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
-				ServeJsonObject(wsi, matchInfoJson);
-				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
-				break;
-			}
-			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/serverinfo")) == 0) {
-
-				TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON();
-				ServeJsonObject(wsi, serverInfoJson);
-				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
-				break;
-			}
-			else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/chatinfo")) == 0) {
-				TSharedPtr<FJsonObject> chatInfoJson = GetChatInfoJSON(Server->_SQLite);
-				ServeJsonObject(wsi, chatInfoJson);
-				lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
-				break;
-			}
-
-			// serving normal file
-			path = (char *)malloc(strlen(www) + strlen(requested_uri));
-
-			sprintf(path, "%s%s", www, requested_uri);
-
-
-			// FIXME SEC prevent reading files not in UT4XWebAdmin www folder
-			char *extension = strrchr(path, '.');
-
-			lws_serve_http_file(wsi, path, getMimeFromExtension(extension), NULL, 0);
-		}
-		// not handled yet
-		else
+		// server index.html file
+		if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/")) == 0)
 		{
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" POST REQUEST !!!"));
-			// we got a post request!, queue up a write callback.
-			lws_callback_on_writable(wsi);
+			requested_uri = (char*) "index.html";
 		}
+		else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/gameinfo")) == 0) {
+			TSharedPtr<FJsonObject> matchInfoJson = GetGameInfoJSON();
+			ServeJsonObject(wsi, matchInfoJson);
+			lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+			break;
+		}
+		else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/serverinfo")) == 0) {
+
+			TSharedPtr<FJsonObject> serverInfoJson = GetServerInfoJSON();
+			ServeJsonObject(wsi, serverInfoJson);
+			lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+			break;
+		}
+		else if (FCString::Strcmp(ANSI_TO_TCHAR(requested_uri), TEXT("/chatinfo")) == 0) {
+			TSharedPtr<FJsonObject> chatInfoJson = GetChatInfoJSON(Server->_SQLite);
+			ServeJsonObject(wsi, chatInfoJson);
+			lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
+			break;
+		}
+
+		// serving normal file
+		path = (char *)malloc(strlen(www) + strlen(requested_uri));
+
+		sprintf(path, "%s%s", www, requested_uri);
+
+
+		// FIXME SEC prevent reading files not in UT4XWebAdmin www folder
+		char *extension = strrchr(path, '.');
+
+		/* refuse to serve files we don't understand */
+		mimetype = getMimeFromExtension(extension);
+		if (!mimetype) {
+			lwsl_err("Unknown mimetype for %s\n", extension);
+			lws_return_http_status(wsi,
+				415, "Unsupported media type"); /* HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE */
+			return -1;
+		}
+
+		lws_serve_http_file(wsi, path, getMimeFromExtension(extension), NULL, 0);
+		
+
 
 		//lws_close_reason(wsi, LWS_CLOSE_STATUS_NORMAL, (unsigned char *)"seeya", 5);
 		break;
 	}
 	
+	// POST DATA FROM CLIENT IS COMING
 	case LWS_CALLBACK_HTTP_BODY: {
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" INCOMING POST REQUEST !!!"));
-		// post data is coming in, push it on to our incoming buffer.
-		//UE_LOG(LogFileServer, Log, TEXT("Incoming HTTP Partial Body Size %d, total size  %d"), Len, Len + BufferInfo->In.Num());
-		// FIXME BufferInfo crashing
+		UE_LOG(UT4WebAdmin, Warning, TEXT("Incoming HTTP Partial Body Size %d, total size  %d"), len, len + BufferInfo->In.Num());
+
 		BufferInfo->In.Append((uint8*) in, len);
 		// we received some data - update time out.
 		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
 		break;
 	}
 								 
-	// POST REQUEST ENDED FROM CLIENT
-	// SEND BACK
+	// ALL POST DATA FROM CLIENT ARRIVED (ex: sending json, file, ...)
+	// "the expected amount of http request body has been delivered"
 	case LWS_CALLBACK_HTTP_BODY_COMPLETION:
 	{
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" INCOMING LWS_CALLBACK_HTTP_BODY_COMPLETION REQUEST !!!"));
-		// we have all the post data from the client.
-		// create archives and process them.
-		UE_LOG(UT4WebAdmin, Log, TEXT("Incoming HTTP total size  %d"), BufferInfo->In.Num());
+		UE_LOG(UT4WebAdmin, Log, TEXT("Post data total size  %d"), BufferInfo->In.Num());
+
 		FMemoryReader Reader(BufferInfo->In);
 		TArray<uint8> Writer;
 
@@ -297,14 +313,36 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 
 		// we have enqueued data increase timeout and push a writable callback.
 		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 60);
-		lws_callback_on_writable(wsi);
 
-		break;
+		// Tell to use "LWS_CALLBACK_HTTP_WRITEABLE" function to send back json report to client
+		//lws_callback_on_writable(wsi);
+		lws_return_http_status(wsi, HTTP_STATUS_OK, NULL);
+		goto try_to_reuse;
 	}
 
+
+
+	case LWS_CALLBACK_HTTP_WRITEABLE: {
+
+		if (BufferInfo == NULL) {
+			break;
+		}
+
+		if (BufferInfo->Out.Num()) {
+			// FIXME client does not seem to receive data OR connection not closed ('pending')
+			int SentSize = lws_write_http(wsi, (unsigned char*)BufferInfo->Out.GetData(), BufferInfo->Out.Num());
+			UE_LOG(UT4WebAdmin, Warning, TEXT(" Sent bytes: %d"), SentSize);
+			// get rid of the data that has been sent.
+			BufferInfo->Out.RemoveAt(0, SentSize);
+			break;
+		}
+
+		goto try_to_reuse;
+	}
+
+	// "when a HTTP (non-websocket) session ends"
 	case LWS_CALLBACK_CLOSED_HTTP: {
 		UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_CLOSED_HTTP"));
-
 
 		// client went away or
 		//clean up.
@@ -314,35 +352,16 @@ int UUT4WebAdminHttpServer::CallBack_HTTP(
 		break;
 	}
 
-	case LWS_CALLBACK_PROTOCOL_DESTROY: {
-		// we are going away.
-		UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_PROTOCOL_DESTROY"));
-		break;
-	}
-
-	case LWS_CALLBACK_HTTP_WRITEABLE: {
-
-		// get rid of superfluous write callbacks.
-		if (BufferInfo == NULL)
-			break;
-
-		// we have data o send out.
-		if (BufferInfo->Out.Num())
-		{
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" LWS_CALLBACK_HTTP_WRITEABLE"));
-			int SentSize = lws_write(wsi, (unsigned char*)BufferInfo->Out.GetData(), BufferInfo->Out.Num(), LWS_WRITE_HTTP);
-			UE_LOG(UT4WebAdmin, Warning, TEXT(" Sent bytes: %d"), SentSize);
-			// get rid of the data that has been sent.
-			BufferInfo->Out.RemoveAt(0, SentSize);
-		}
-
-		break;
-	}
-
 	default:
 		break;
 	}
 
+
+	return 0;
+
+try_to_reuse:
+	if (lws_http_transaction_completed(wsi))
+		return -1;
 
 	return 0;
 }
