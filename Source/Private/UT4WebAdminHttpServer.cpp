@@ -1,5 +1,5 @@
 
-//#include "UT4WebAdmin.h"
+#include "UT4WebAdmin.h"
 //#include "UTBaseGameMode.h"
 #include "UT4WebAdminGameInfo.h"
 #include "UT4WebAdminServerInfo.h"

@@ -18,8 +18,7 @@
 #include "UT4WebAdminSQLite.h"
 
 
-#include "ThirdParty/libWebSockets/include/libwebsockets.h"
-#include "ThirdParty/libWebSockets/include/lws_config.h"
+#include "libwebsockets.h"
 
 
 #if PLATFORM_WINDOWS

@@ -15,15 +15,10 @@ namespace UnrealBuildTool.Rules
 					"PakFile",
 					"Json", 
 					"JsonUtilities",
-                    "OpenSSL",
+                    "WebSockets",
                     "libWebSockets"
                 }
 			);
-
-            
-            var UT4_WEBADMIN_SRC_PATH = "../../UnrealTournament/Plugins/UT4WebAdmin/Source";
-            var LIB_WEBSOCKETS_PATH = UT4_WEBADMIN_SRC_PATH + "/ThirdParty/LibWebSockets";
-            PublicIncludePaths.Add(LIB_WEBSOCKETS_PATH + "/include");
         }
 	}
 }

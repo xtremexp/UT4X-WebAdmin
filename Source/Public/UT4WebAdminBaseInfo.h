@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UT4WebAdmin.h"
+
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTGameMode.h"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UT4WebAdmin.h"
 #include "Core.h"
 #include "UnrealTournament.h"
 #include "UTGameInstance.h"
@@ -11,7 +12,7 @@
 #define UT4WA_SQL_FOLDER "sql"
 
 USTRUCT(BlueprintType)
-struct FDbRow
+struct FDbRowx
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -32,7 +33,7 @@ class UUT4WebAdminSQLite : public UObject
 	void Stop();
 
 	/* Adapted function from original UTGameInstance.cpp adding parameters binding for safer sql (injection) */
-	bool ExecDatabaseCommandNew(const FString& DatabaseCommand, TArray<FDbRow>& DatabaseRows);
+	bool ExecDatabaseCommandNew(const FString& DatabaseCommand, TArray<FDbRowx>& DatabaseRows);
 
 	/* Save chat messages for current session - Messages might be cleaned up after each new session */
 	void SaveChatMessageForSession(const FString& sessionName, const FString& senderName, const FString& senderUniqueId, const FString& message);

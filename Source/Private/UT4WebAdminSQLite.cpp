@@ -82,7 +82,7 @@ void UUT4WebAdminSQLite::Stop() {
 
 
 // slightly modified original UTGameInstance.ExecDatabaseCommand
-bool UUT4WebAdminSQLite::ExecDatabaseCommandNew(const FString& DatabaseCommand, TArray<FDbRow>& DatabaseRows)
+bool UUT4WebAdminSQLite::ExecDatabaseCommandNew(const FString& DatabaseCommand, TArray<FDbRowx>& DatabaseRows)
 {
 	int DBreturn = SQLITE_ERROR;
 
@@ -112,7 +112,7 @@ bool UUT4WebAdminSQLite::ExecDatabaseCommandNew(const FString& DatabaseCommand, 
 		DBreturn = sqlite3_step(DatabaseStatement);
 		while (DBreturn == SQLITE_ROW)
 		{
-			FDbRow NewRow;
+			FDbRowx NewRow;
 			int DBColumnCount = sqlite3_column_count(DatabaseStatement);
 			for (int i = 0; i < DBColumnCount; i++)
 			{
@@ -154,7 +154,7 @@ bool UUT4WebAdminSQLite::ExecDatabaseCommandNew(const FString& DatabaseCommand, 
 // TODO add parameters for selective search
 bool UUT4WebAdminSQLite::GetChatMessages(TArray<FChatRow>& ChatRows) {
 
-	TArray<FDbRow> DatabaseRows;
+	TArray<FDbRowx> DatabaseRows;
 	FString Sql = "SELECT time, sender_name, sender_uid, sender_team_num, message FROM `ut4webadmin_chat`;";
 
 	ExecDatabaseCommandNew(*Sql, DatabaseRows);
